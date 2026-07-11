@@ -10,19 +10,27 @@ config_version=5
 
 [application]
 
-config/name="Festivalthegame"
+config/name="Festival: The Game"
 config/features=PackedStringArray("4.6", "Mobile")
 config/icon="res://icon.svg"
+run/main_scene="res://scenes/main.tscn"
 
-[dotnet]
+[autoload]
 
-project/assembly_name="Festivalthegame"
+Clock="*res://scripts/systems/game_clock.gd"
+Game="*res://scripts/systems/game_state.gd"
 
-[physics]
+[display]
 
-3d/physics_engine="Jolt Physics"
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
+[input_devices]
+
+pointing/emulate_mouse_from_touch=true
 
 [rendering]
 
-rendering_device/driver.windows="d3d12"
 renderer/rendering_method="mobile"
