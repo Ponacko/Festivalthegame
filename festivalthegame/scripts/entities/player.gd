@@ -5,8 +5,6 @@ extends CharacterBody2D
 
 const SPEED := 140.0          # pixels per real-second
 const ARRIVE_DISTANCE := 4.0
-const ENERGY_PER_PIXEL := 0.02
-const THIRST_PER_PIXEL := 0.01
 
 var _target: Vector2
 var _moving := false
@@ -40,10 +38,9 @@ func _physics_process(_delta: float) -> void:
 		else:
 			_target = _route.pop_front()
 		return
-	velocity = to_target.normalized() * SPEED * Clock.time_scale
+	var crowd_speed := CrowdField.speed_multiplier(Game.lineup, global_position, Clock.total_minutes)
+	velocity = to_target.normalized() * SPEED * Clock.time_scale * crowd_speed
 	var before := global_position
 	move_and_slide()
 	var walked := global_position.distance_to(before)
-	if walked > 0.0 and Game.needs != null:
-		Game.needs.adjust(Needs.Kind.ENERGY, -ENERGY_PER_PIXEL * walked)
-		Game.needs.adjust(Needs.Kind.THIRST, -THIRST_PER_PIXEL * walked)
+	WalkingCost.apply(Game.needs, walked)

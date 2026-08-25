@@ -26,7 +26,12 @@ func _process(_delta: float) -> void:
 		_label.text = "%s\n(no set)" % _stage.display_name
 
 func _draw() -> void:
-	draw_circle(Vector2.ZERO, Audience.BACK_RADIUS, Color(1, 1, 1, 0.05))
-	draw_circle(Vector2.ZERO, Audience.MID_RADIUS, Color(1, 1, 1, 0.06))
-	draw_circle(Vector2.ZERO, Audience.FRONT_RADIUS, Color(1, 1, 1, 0.08))
+	var active_set: FestivalSet = Game.lineup.active_set_for(_stage, Clock.total_minutes) if Game.lineup else null
+	if active_set != null:
+		var popularity := active_set.artist.popularity
+		draw_circle(Vector2.ZERO, Audience.BACK_RADIUS, Color(1, 1, 1, 0.025 + popularity * 0.035))
+		draw_circle(Vector2.ZERO, Audience.MID_RADIUS, Color(1, 1, 1, 0.035 + popularity * 0.055))
+		draw_circle(Vector2.ZERO, Audience.FRONT_RADIUS, Color(1, 1, 1, 0.05 + popularity * 0.09))
+	else:
+		draw_arc(Vector2.ZERO, Audience.BACK_RADIUS, 0.0, TAU, 64, Color(1, 1, 1, 0.12), 2.0)
 	draw_rect(Rect2(-60, -40, 120, 80), Color(0.5, 0.3, 0.6, 1))
