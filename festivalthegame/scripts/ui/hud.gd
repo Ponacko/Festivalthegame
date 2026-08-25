@@ -90,7 +90,7 @@ func _process(_delta: float) -> void:
 		FestivalTime.clock_string(Clock.total_minutes),
 		("PAUSED" if Clock.paused else "playing"),
 		Clock.time_scale,
-		Game.enjoyment_score,
+		Game.current_score(),
 		Game.budget,
 		Game.needs.enjoyment_multiplier(),
 	]

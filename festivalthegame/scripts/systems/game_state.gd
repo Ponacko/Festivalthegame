@@ -20,8 +20,9 @@ var lineup: Lineup
 var current_configuration: RunConfiguration
 var run_seed := 0
 var budget := STARTING_BUDGET
-var enjoyment_score := 0.0
+var score_ledger := ScoreLedger.new()
 var run_status := RunStatus.NOT_STARTED
+var _festival_maximum := 0.0
 
 func _ready() -> void:
 	Clock.time_advanced.connect(_on_time_advanced)
@@ -43,9 +44,35 @@ func start_new_run(configuration: RunConfiguration = null, seed_value := -1) -> 
 		GenreCatalog.load_bundled(),
 		GenreGraph.load_bundled())
 	budget = STARTING_BUDGET
-	enjoyment_score = 0.0
+	score_ledger = ScoreLedger.new()
+	_festival_maximum = TheoreticalMaximum.calculate(lineup)
 	run_status = RunStatus.PLAYING
 	Clock.reset()
+
+func record_attendance(
+		festival_set: FestivalSet,
+		minutes: float,
+		affinity_multiplier: float,
+		zone_multiplier: float,
+		needs_multiplier: float) -> ScoreEntry:
+	return score_ledger.record_attendance(
+		festival_set, minutes, affinity_multiplier, zone_multiplier, needs_multiplier)
+
+func award_bonus(source_name: String, points: float) -> float:
+	var entry := score_ledger.record_bonus(source_name, points)
+	return entry.points if entry != null else 0.0
+
+func current_score() -> float:
+	return score_ledger.total()
+
+func theoretical_maximum() -> float:
+	# Named bonuses may introduce points outside the attendance model. Keeping the
+	# reported ceiling at least as high preserves a meaningful bounded percentage.
+	return maxf(_festival_maximum, current_score())
+
+func score_percentage() -> float:
+	var maximum := theoretical_maximum()
+	return 0.0 if maximum <= 0.0 else current_score() / maximum * 100.0
 
 func _on_time_advanced(minutes: float) -> void:
 	if needs != null:

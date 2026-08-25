@@ -31,16 +31,40 @@ func _score_attendance(interval_start: float, interval_end: float) -> void:
 	if _player == null or Game.lineup == null or Game.needs == null:
 		return
 	var needs_mult := Game.needs.enjoyment_multiplier()
+	var boundaries: Array[float] = [interval_start, interval_end]
 	for festival_set in Game.lineup.sets:
-		var attended_minutes := maxf(0.0,
-			minf(interval_end, festival_set.end_minute) - maxf(interval_start, festival_set.start_minute))
-		if attended_minutes <= 0.0:
+		if festival_set.end_minute <= interval_start or festival_set.start_minute >= interval_end:
 			continue
 		var zone := Audience.zone_at(_player.global_position.distance_to(festival_set.stage.position))
-		if zone == Audience.Zone.NONE:
+		if zone != Audience.Zone.NONE:
+			boundaries.append(maxf(interval_start, festival_set.start_minute))
+			boundaries.append(minf(interval_end, festival_set.end_minute))
+	boundaries.sort()
+	for index in range(1, boundaries.size()):
+		var segment_start := boundaries[index - 1]
+		var segment_end := boundaries[index]
+		if segment_end <= segment_start:
 			continue
-		Game.enjoyment_score += festival_set.artist.affinity \
-			* Audience.multiplier(zone) * needs_mult * attended_minutes
+		var sample := (segment_start + segment_end) * 0.5
+		var best_set: FestivalSet = null
+		var best_zone := Audience.Zone.NONE
+		var best_rate := 0.0
+		for festival_set in Game.lineup.sets:
+			if not festival_set.is_active(sample):
+				continue
+			var zone := Audience.zone_at(_player.global_position.distance_to(festival_set.stage.position))
+			var rate := festival_set.artist.affinity * Audience.multiplier(zone) * needs_mult
+			if rate > best_rate:
+				best_set = festival_set
+				best_zone = zone
+				best_rate = rate
+		if best_set != null:
+			Game.record_attendance(
+				best_set,
+				segment_end - segment_start,
+				best_set.artist.affinity,
+				Audience.multiplier(best_zone),
+				needs_mult)
 
 func _evaluate() -> void:
 	current_stage = null
