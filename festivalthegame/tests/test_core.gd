@@ -28,9 +28,13 @@ func test_festival_time() -> void:
 	check(FestivalTime.clock_string(0.0) == "11:00", "minute 0 reads 11:00")
 	check(FestivalTime.clock_string(60.0) == "12:00", "one hour later reads 12:00")
 	check(FestivalTime.clock_string(13.0 * 60.0) == "00:00", "13h later wraps to 00:00")
-	check(FestivalTime.day(13.0 * 60.0) == 2, "13h later is Day 2")
+	check(FestivalTime.day(13.0 * 60.0) == 1, "midnight remains Festival Day 1")
+	check(FestivalTime.day(14.0 * 60.0) == 1, "arena closing remains Festival Day 1")
 	check(FestivalTime.day(24.0 * 60.0) == 2, "24h later still Day 2 (back to 11:00)")
 	check(FestivalTime.clock_string(24.0 * 60.0) == "11:00", "24h later reads 11:00")
+	check(FestivalTime.is_arena_open(0.0), "arena opens at 11:00")
+	check(not FestivalTime.is_arena_open(14.0 * 60.0), "arena closes at 01:00")
+	check(FestivalTime.run_end_minute() == 62.0 * 60.0, "three playable Days end after the final night boundary")
 
 func test_needs_decay() -> void:
 	print("Needs decay:")

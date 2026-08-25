@@ -11,6 +11,8 @@ var _planner_was_paused := false
 func _ready() -> void:
 	_setup.configuration_submitted.connect(_on_configuration_submitted)
 	_hud.schedule_requested.connect(_open_schedule)
+	_hud.pause_requested.connect(_toggle_pause)
+	_hud.speed_requested.connect(_cycle_speed)
 	_schedule.closed.connect(_on_schedule_closed)
 	_open_setup()
 	_spawn_stage_views()
@@ -49,14 +51,22 @@ func _open_schedule() -> void:
 func _on_schedule_closed() -> void:
 	Clock.paused = _planner_was_paused
 
+func _toggle_pause() -> void:
+	if not _setup.visible and not _schedule.visible:
+		Clock.toggle_paused()
+
+func _cycle_speed() -> void:
+	if not _setup.visible and not _schedule.visible:
+		Clock.cycle_time_scale()
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		match event.keycode:
 			KEY_SPACE:
-				Clock.paused = not Clock.paused
+				_toggle_pause()
 			KEY_R:
 				_open_setup()
 			KEY_BRACKETRIGHT:
-				Clock.time_scale = minf(Clock.time_scale * 2.0, 64.0)
+				Clock.cycle_time_scale(1)
 			KEY_BRACKETLEFT:
-				Clock.time_scale = maxf(Clock.time_scale / 2.0, 0.25)
+				Clock.cycle_time_scale(-1)

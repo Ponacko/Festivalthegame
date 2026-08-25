@@ -3,11 +3,15 @@ extends CanvasLayer
 ## Built in code to avoid hand-authoring a deep scene tree.
 
 signal schedule_requested
+signal pause_requested
+signal speed_requested
 
 var _info: Label
 var _enjoy: Label
 var _bars := {}
 var _enjoy_node: Node
+var _pause_button: Button
+var _speed_button: Button
 
 func _ready() -> void:
 	var schedule_button := Button.new()
@@ -22,6 +26,30 @@ func _ready() -> void:
 	schedule_button.offset_bottom = 64.0
 	schedule_button.pressed.connect(func() -> void: schedule_requested.emit())
 	add_child(schedule_button)
+
+	_pause_button = Button.new()
+	_pause_button.name = "PauseButton"
+	_pause_button.custom_minimum_size = Vector2(160, 52)
+	_pause_button.anchor_left = 1.0
+	_pause_button.anchor_right = 1.0
+	_pause_button.offset_left = -172.0
+	_pause_button.offset_top = 76.0
+	_pause_button.offset_right = -12.0
+	_pause_button.offset_bottom = 128.0
+	_pause_button.pressed.connect(func() -> void: pause_requested.emit())
+	add_child(_pause_button)
+
+	_speed_button = Button.new()
+	_speed_button.name = "SpeedButton"
+	_speed_button.custom_minimum_size = Vector2(160, 52)
+	_speed_button.anchor_left = 1.0
+	_speed_button.anchor_right = 1.0
+	_speed_button.offset_left = -172.0
+	_speed_button.offset_top = 140.0
+	_speed_button.offset_right = -12.0
+	_speed_button.offset_bottom = 192.0
+	_speed_button.pressed.connect(func() -> void: speed_requested.emit())
+	add_child(_speed_button)
 
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 12)
@@ -53,6 +81,8 @@ func _ready() -> void:
 		_bars[k] = bar
 
 func _process(_delta: float) -> void:
+	_pause_button.text = "Resume" if Clock.paused else "Pause"
+	_speed_button.text = "Speed  x%.0f" % Clock.time_scale
 	if Game.needs == null:
 		return
 	_info.text = "Day %d  %s   %s  x%.2f   Score %.0f   €%.0f   Mult x%.2f\n[tap: move]  [space: pause]  [ [ / ] : speed ]  [R: new run]" % [

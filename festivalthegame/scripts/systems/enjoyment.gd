@@ -24,9 +24,23 @@ func _process(_delta: float) -> void:
 	_evaluate()  # keep the readout fresh even while paused
 
 func _on_time_advanced(minutes: float) -> void:
+	_score_attendance(Clock.total_minutes - minutes, Clock.total_minutes)
 	_evaluate()
-	if current_rate > 0.0:
-		Game.enjoyment_score += current_rate * minutes
+
+func _score_attendance(interval_start: float, interval_end: float) -> void:
+	if _player == null or Game.lineup == null or Game.needs == null:
+		return
+	var needs_mult := Game.needs.enjoyment_multiplier()
+	for festival_set in Game.lineup.sets:
+		var attended_minutes := maxf(0.0,
+			minf(interval_end, festival_set.end_minute) - maxf(interval_start, festival_set.start_minute))
+		if attended_minutes <= 0.0:
+			continue
+		var zone := Audience.zone_at(_player.global_position.distance_to(festival_set.stage.position))
+		if zone == Audience.Zone.NONE:
+			continue
+		Game.enjoyment_score += festival_set.artist.affinity \
+			* Audience.multiplier(zone) * needs_mult * attended_minutes
 
 func _evaluate() -> void:
 	current_stage = null

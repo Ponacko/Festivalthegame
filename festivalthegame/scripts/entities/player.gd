@@ -17,10 +17,16 @@ func _ready() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	# Touch is delivered as a mouse event via emulate_mouse_from_touch.
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		_target = get_global_mouse_position()
-		_moving = true
+		move_to(get_global_mouse_position())
+
+func move_to(world_position: Vector2) -> void:
+	_target = world_position
+	_moving = true
 
 func _physics_process(_delta: float) -> void:
+	if Clock.paused:
+		velocity = Vector2.ZERO
+		return
 	if not _moving:
 		return
 	var to_target := _target - global_position
@@ -28,7 +34,7 @@ func _physics_process(_delta: float) -> void:
 		_moving = false
 		velocity = Vector2.ZERO
 		return
-	velocity = to_target.normalized() * SPEED
+	velocity = to_target.normalized() * SPEED * Clock.time_scale
 	var before := global_position
 	move_and_slide()
 	var walked := global_position.distance_to(before)
