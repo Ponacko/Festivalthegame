@@ -61,6 +61,20 @@ func _ready() -> void:
 		var first_aid := Game.grounds.points_of_kind(FestivalPoint.Kind.FIRST_AID)[0]
 		check(player_for_facility.position == first_aid.position,
 			"live Collapse flow relocates the player to First Aid")
+		Game.needs.adjust(Needs.Kind.BLADDER, -Needs.MAX)
+		await get_tree().process_frame
+		check(Game.has_accident_penalty() and facility_status.text.contains("Social"),
+			"live Bladder accident exposes its persistent Social penalty")
+		player_for_facility.position = Game.grounds.camp.interaction_position
+		await get_tree().process_frame
+		await get_tree().process_frame
+		check(facility_button.visible and facility_button.text.contains("Change clothes"),
+			"selected camp exposes the changing interaction")
+		var before_change := Clock.total_minutes
+		facility_button.pressed.emit()
+		check(not Game.has_accident_penalty() \
+			and Clock.total_minutes >= before_change + Game.CHANGE_CLOTHES_MINUTES,
+			"touch camp interaction spends time and clears the accident penalty")
 
 	var pause_button := main.get_node_or_null("Hud/PauseButton") as Button
 	var speed_button := main.get_node_or_null("Hud/SpeedButton") as Button

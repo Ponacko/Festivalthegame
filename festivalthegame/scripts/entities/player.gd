@@ -20,7 +20,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		move_to(get_global_mouse_position())
 
 func move_to(world_position: Vector2) -> void:
-	if Game.is_collapsed() or (Game.facility_queue != null and Game.facility_queue.is_active()):
+	if Game.is_action_locked() or (Game.facility_queue != null and Game.facility_queue.is_active()):
 		return
 	_route = Game.grounds.path(global_position, world_position) if Game.grounds != null else [world_position]
 	if not _route.is_empty():
@@ -28,7 +28,7 @@ func move_to(world_position: Vector2) -> void:
 		_moving = true
 
 func _physics_process(_delta: float) -> void:
-	if Clock.paused or Game.is_collapsed() \
+	if Clock.paused or Game.is_action_locked() \
 			or (Game.facility_queue != null and Game.facility_queue.is_active()):
 		velocity = Vector2.ZERO
 		return

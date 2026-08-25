@@ -98,6 +98,8 @@ func _ready() -> void:
 	Game.collapse_started.connect(func(kind: int) -> void:
 		_facility_status.text = "Blackout — %s reached zero…" % Needs.NAMES[kind])
 	Game.collapse_completed.connect(func(message: String) -> void: _facility_status.text = message)
+	Game.bladder_accident_occurred.connect(func(message: String) -> void: _facility_status.text = message)
+	Game.clothes_changed.connect(func(message: String) -> void: _facility_status.text = message)
 
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 12)
@@ -163,9 +165,14 @@ func _update_facility_action() -> void:
 		return
 	var player := get_tree().get_first_node_in_group("player") as Node2D
 	_nearby_facility = Game.nearest_facility(player.global_position) if player != null else null
+	if _nearby_facility != null and _nearby_facility.kind == FestivalPoint.Kind.CAMP \
+			and not Game.has_accident_penalty():
+		_nearby_facility = null
 	_facility_button.visible = _nearby_facility != null
 	if _nearby_facility != null:
-		if _nearby_facility.kind == FestivalPoint.Kind.VENDOR:
+		if _nearby_facility.kind == FestivalPoint.Kind.CAMP:
+			_facility_button.text = "Change clothes at Camp  •  %.0f min" % Game.CHANGE_CLOTHES_MINUTES
+		elif _nearby_facility.kind == FestivalPoint.Kind.VENDOR:
 			_facility_button.text = "Shop at %s" % _nearby_facility.display_name
 		else:
 			_facility_button.text = "Use %s  •  Queue %.1f min" % [
@@ -177,7 +184,9 @@ func _on_facility_pressed() -> void:
 		return
 	var player := get_tree().get_first_node_in_group("player") as Node2D
 	if _nearby_facility != null and player != null:
-		if _nearby_facility.kind == FestivalPoint.Kind.VENDOR:
+		if _nearby_facility.kind == FestivalPoint.Kind.CAMP:
+			Game.change_at_camp(player.global_position)
+		elif _nearby_facility.kind == FestivalPoint.Kind.VENDOR:
 			vendor_requested.emit(Game.grounds.vendor_for_point(_nearby_facility))
 		else:
 			Game.start_facility_queue(_nearby_facility, player.global_position)

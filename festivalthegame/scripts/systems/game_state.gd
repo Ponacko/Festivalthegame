@@ -19,6 +19,8 @@ signal vendor_purchase_rejected(message: String)
 signal collapse_started(primary_need: int)
 signal collapse_completed(message: String)
 signal player_relocation_requested(world_position: Vector2)
+signal bladder_accident_occurred(message: String)
+signal clothes_changed(message: String)
 
 enum RunStatus { NOT_STARTED, PLAYING, COMPLETE }
 
@@ -26,6 +28,9 @@ const COLLAPSE_MINUTES := 90.0
 const COLLAPSE_RESTORE := 35.0
 const COLLAPSE_MOOD := 20.0
 const COLLAPSE_NEEDS := [Needs.Kind.HUNGER, Needs.Kind.THIRST, Needs.Kind.ENERGY]
+const ACCIDENT_MOOD := 10.0
+const ACCIDENT_SOCIAL_PENALTY := 30.0
+const CHANGE_CLOTHES_MINUTES := 20.0
 
 var needs: Needs
 var lineup: Lineup
@@ -41,6 +46,8 @@ var _festival_maximum := 0.0
 var _pending_vendor: Vendor
 var _pending_vendor_item: VendorItem
 var _collapsing := false
+var _accident_penalty := false
+var _changing_clothes := false
 
 func _ready() -> void:
 	Clock.time_advanced.connect(_on_time_advanced)
@@ -50,7 +57,8 @@ func _ready() -> void:
 	Clock.reset()
 
 func _process(_delta: float) -> void:
-	check_for_collapse()
+	if not check_for_collapse():
+		check_for_accident()
 
 func start_new_run(configuration: RunConfiguration = null, seed_value := -1) -> void:
 	if configuration != null:
@@ -73,6 +81,8 @@ func start_new_run(configuration: RunConfiguration = null, seed_value := -1) -> 
 	_pending_vendor_item = null
 	run_events.clear()
 	_collapsing = false
+	_accident_penalty = false
+	_changing_clothes = false
 	_festival_maximum = TheoreticalMaximum.calculate(lineup)
 	run_status = RunStatus.PLAYING
 	Clock.reset()
@@ -147,6 +157,40 @@ func check_for_collapse() -> bool:
 func is_collapsed() -> bool:
 	return _collapsing
 
+func check_for_accident() -> bool:
+	if _accident_penalty or needs == null or grounds == null or run_status != RunStatus.PLAYING:
+		return false
+	if not needs.is_empty(Needs.Kind.BLADDER):
+		return false
+	_accident_penalty = true
+	needs.adjust(Needs.Kind.MOOD, ACCIDENT_MOOD - needs.get_value(Needs.Kind.MOOD))
+	needs.set_social_penalty(ACCIDENT_SOCIAL_PENALTY)
+	needs.adjust(Needs.Kind.BLADDER, 30.0)
+	run_events.append(RunEvent.new(
+		"bladder_accident", Clock.total_minutes, "Bladder accident; change clothes at camp"))
+	bladder_accident_occurred.emit(
+		"Bladder accident — Mood crashed and Social -%.0f until you change at camp." % ACCIDENT_SOCIAL_PENALTY)
+	return true
+
+func has_accident_penalty() -> bool:
+	return _accident_penalty
+
+func change_at_camp(player_position: Vector2) -> bool:
+	if not _accident_penalty or _changing_clothes or grounds == null or grounds.camp == null:
+		return false
+	if player_position.distance_to(grounds.camp.interaction_position) > 90.0:
+		return false
+	_changing_clothes = true
+	Clock.advance_game_minutes(CHANGE_CLOTHES_MINUTES)
+	needs.set_social_penalty(0.0)
+	_accident_penalty = false
+	_changing_clothes = false
+	clothes_changed.emit("Changed clothes at camp — Social penalty cleared.")
+	return true
+
+func is_action_locked() -> bool:
+	return _collapsing or _changing_clothes
+
 func queue_preview(facility: FestivalPoint) -> float:
 	if facility == null:
 		return 0.0
@@ -154,7 +198,7 @@ func queue_preview(facility: FestivalPoint) -> float:
 	return FacilityQueue.duration_for(facility.kind, density)
 
 func start_facility_queue(facility: FestivalPoint, player_position: Vector2) -> bool:
-	if _collapsing or facility == null or player_position.distance_to(facility.position) > 90.0:
+	if is_action_locked() or facility == null or player_position.distance_to(facility.position) > 90.0:
 		return false
 	var density := CrowdField.density(lineup, facility.position, Clock.total_minutes)
 	if not facility_queue.start(facility, density):
@@ -175,7 +219,7 @@ func vendor_queue_preview(vendor: Vendor) -> float:
 	return queue_preview(vendor.point) if vendor != null else 0.0
 
 func start_vendor_purchase(vendor: Vendor, item: VendorItem, player_position: Vector2) -> bool:
-	if _collapsing or vendor == null or item == null or not vendor.archetype.menu.has(item):
+	if is_action_locked() or vendor == null or item == null or not vendor.archetype.menu.has(item):
 		return false
 	var price := vendor.price_for(item)
 	if budget < price:
@@ -192,7 +236,7 @@ func nearest_facility(world_position: Vector2, maximum_distance := 90.0) -> Fest
 		return null
 	var closest: FestivalPoint = null
 	var closest_distance := maximum_distance
-	for kind in [FestivalPoint.Kind.WATER, FestivalPoint.Kind.TOILET, FestivalPoint.Kind.VENDOR]:
+	for kind in [FestivalPoint.Kind.WATER, FestivalPoint.Kind.TOILET, FestivalPoint.Kind.VENDOR, FestivalPoint.Kind.CAMP]:
 		for point in grounds.points_of_kind(kind):
 			var distance := world_position.distance_to(point.position)
 			if distance <= closest_distance:
