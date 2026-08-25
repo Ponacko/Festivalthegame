@@ -25,6 +25,15 @@ func _ready() -> void:
 		"submitting setup generates the complete Festival")
 	check(not Clock.paused, "Festival time starts after setup")
 
+	var schedule_button := main.get_node_or_null("Hud/ScheduleButton") as Button
+	var schedule := main.get_node_or_null("PlannerLayer/Schedule") as ScheduleView
+	check(schedule_button != null and schedule != null, "playable HUD exposes the schedule planner")
+	schedule_button.pressed.emit()
+	check(schedule.visible and Clock.paused, "opening the planner pauses without moving Festival time")
+	var close_button := schedule.get_node("Panel/Margin/Content/Close") as Button
+	close_button.pressed.emit()
+	check(not schedule.visible and not Clock.paused, "closing the planner resumes the Festival")
+
 	if failures == 0:
 		print("ALL MAIN SETUP TESTS PASSED")
 	else:

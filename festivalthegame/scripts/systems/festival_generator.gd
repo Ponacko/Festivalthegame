@@ -34,23 +34,48 @@ static func generate(
 	var slots := _build_slots(lineup.stages, rng)
 	var pools := _build_genre_pools(configuration, catalog, graph)
 	var used_names := {}
+	for favorite in configuration.favorites:
+		used_names[favorite.artist_name.to_lower()] = true
 	var affinity := ArtistAffinity.new(graph)
+	var favorite_slots := _favorite_slot_map(configuration.favorites.size(), slots.size())
+	var nonfavorite_index := 0
 
 	for index in range(slots.size()):
 		var slot: Dictionary = slots[index]
 		var stage: Stage = slot.stage
 		var artist: Artist
-		if index < configuration.favorites.size():
-			var favorite: FavoriteArtistPreference = configuration.favorites[index]
+		if favorite_slots.has(index):
+			var favorite: FavoriteArtistPreference = configuration.favorites[favorite_slots[index]]
 			artist = Artist.new(favorite.artist_name, favorite.genre_id, _popularity_for(stage, rng), true)
 		else:
-			var genre := _choose_genre(index - configuration.favorites.size(), pools, rng)
+			var forced_genre: GenreEntry = null
+			if configuration.favorites.size() == 1 and index == SETS_PER_STAGE_DAY:
+				forced_genre = catalog.find_by_id(configuration.favorites[0].genre_id)
+			var genre := forced_genre if forced_genre != null else _choose_genre(nonfavorite_index, pools, rng)
 			artist = Artist.new(_unique_artist_name(used_names, rng), genre.id, _popularity_for(stage, rng))
+			nonfavorite_index += 1
 		used_names[artist.name.to_lower()] = true
 		artist.affinity = affinity.for_artist(artist, configuration.favorites)
 		lineup.artists.append(artist)
 		lineup.sets.append(FestivalSet.new(artist, stage, slot.start, slot.end))
 	return lineup
+
+static func _favorite_slot_map(favorite_count: int, slot_count: int) -> Dictionary:
+	var result := {}
+	var preferred := [0, SETS_PER_STAGE_DAY, SETS_PER_STAGE_DAY * 2, SETS_PER_STAGE_DAY * 3]
+	var favorite_index := 0
+	for slot_index in preferred:
+		if favorite_index >= favorite_count or slot_index >= slot_count:
+			break
+		result[slot_index] = favorite_index
+		favorite_index += 1
+	var slot_index := 0
+	while favorite_index < favorite_count and slot_index < slot_count:
+		if not result.has(slot_index):
+			result[slot_index] = favorite_index
+			favorite_index += 1
+		slot_index += 1
+	return result
 
 static func _build_stages() -> Array[Stage]:
 	return [
@@ -125,4 +150,3 @@ static func _unique_artist_name(used_names: Dictionary, rng: RandomNumberGenerat
 		if not used_names.has(candidate.to_lower()):
 			return candidate
 	return "Festival Artist %d" % used_names.size()
-

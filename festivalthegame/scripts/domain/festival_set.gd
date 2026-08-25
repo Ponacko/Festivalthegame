@@ -17,3 +17,6 @@ func _init(p_artist: Artist = null, p_stage: Stage = null, p_start := 0.0, p_end
 
 func is_active(total_minutes: float) -> bool:
 	return total_minutes >= start_minute and total_minutes < end_minute
+
+func overlaps(other: FestivalSet) -> bool:
+	return start_minute < other.end_minute and other.start_minute < end_minute

@@ -2,12 +2,27 @@ extends CanvasLayer
 ## Debug HUD (slice 1): shows the festival clock, Run stats, and a bar per Need.
 ## Built in code to avoid hand-authoring a deep scene tree.
 
+signal schedule_requested
+
 var _info: Label
 var _enjoy: Label
 var _bars := {}
 var _enjoy_node: Node
 
 func _ready() -> void:
+	var schedule_button := Button.new()
+	schedule_button.name = "ScheduleButton"
+	schedule_button.text = "Schedule"
+	schedule_button.custom_minimum_size = Vector2(160, 52)
+	schedule_button.anchor_left = 1.0
+	schedule_button.anchor_right = 1.0
+	schedule_button.offset_left = -172.0
+	schedule_button.offset_top = 12.0
+	schedule_button.offset_right = -12.0
+	schedule_button.offset_bottom = 64.0
+	schedule_button.pressed.connect(func() -> void: schedule_requested.emit())
+	add_child(schedule_button)
+
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 12)
 	margin.add_theme_constant_override("margin_top", 12)
