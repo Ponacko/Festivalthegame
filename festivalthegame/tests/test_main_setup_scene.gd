@@ -27,6 +27,24 @@ func _ready() -> void:
 	check(Game.grounds.camp != null and Game.grounds.camp.friend_count == 2,
 		"the selected campsite becomes the whole group's home base")
 	check(not Clock.paused, "Festival time starts after setup")
+	var facility_button := main.get_node_or_null("Hud/FacilityButton") as Button
+	var facility_status := main.get_node_or_null("Hud/FacilityStatus") as Label
+	check(facility_button != null and facility_status != null, "touch HUD exposes nearby facility interactions and status")
+	if facility_button != null:
+		var player_for_facility := main.get_node("Player") as Node2D
+		var water := Game.grounds.points_of_kind(FestivalPoint.Kind.WATER)[0]
+		player_for_facility.position = water.position
+		await get_tree().process_frame
+		check(facility_button.visible and facility_button.text.contains("Queue"), "facility UI previews Queue time")
+		facility_button.pressed.emit()
+		check(Game.facility_queue.is_active(), "touch interaction joins the Queue")
+		var queued_position := player_for_facility.position
+		player_for_facility.move_to(queued_position + Vector2(120, 0))
+		await get_tree().physics_frame
+		check(player_for_facility.position == queued_position, "Queueing prevents player movement")
+		facility_button.pressed.emit()
+		check(not Game.facility_queue.is_active() and facility_status.text.contains("left"),
+			"touch interaction can interrupt the Queue clearly")
 
 	var pause_button := main.get_node_or_null("Hud/PauseButton") as Button
 	var speed_button := main.get_node_or_null("Hud/SpeedButton") as Button

@@ -13,6 +13,9 @@ var _bars := {}
 var _enjoy_node: Node
 var _pause_button: Button
 var _speed_button: Button
+var _facility_button: Button
+var _facility_status: Label
+var _nearby_facility: FestivalPoint
 
 func _ready() -> void:
 	var schedule_button := Button.new()
@@ -65,6 +68,33 @@ func _ready() -> void:
 	map_button.pressed.connect(func() -> void: map_requested.emit())
 	add_child(map_button)
 
+	_facility_button = Button.new()
+	_facility_button.name = "FacilityButton"
+	_facility_button.custom_minimum_size = Vector2(300, 56)
+	_facility_button.anchor_top = 1.0
+	_facility_button.anchor_bottom = 1.0
+	_facility_button.offset_left = 12.0
+	_facility_button.offset_top = -68.0
+	_facility_button.offset_right = 312.0
+	_facility_button.offset_bottom = -12.0
+	_facility_button.visible = false
+	_facility_button.pressed.connect(_on_facility_pressed)
+	add_child(_facility_button)
+
+	_facility_status = Label.new()
+	_facility_status.name = "FacilityStatus"
+	_facility_status.anchor_top = 1.0
+	_facility_status.anchor_bottom = 1.0
+	_facility_status.offset_left = 12.0
+	_facility_status.offset_top = -100.0
+	_facility_status.offset_right = 520.0
+	_facility_status.offset_bottom = -72.0
+	add_child(_facility_status)
+	Game.facility_queue_started.connect(func(facility_name: String, duration: float) -> void:
+		_facility_status.text = "Queueing at %s — %.1f min" % [facility_name, duration])
+	Game.facility_queue_finished.connect(func(message: String) -> void: _facility_status.text = message)
+	Game.facility_queue_interrupted.connect(func(message: String) -> void: _facility_status.text = message)
+
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 12)
 	margin.add_theme_constant_override("margin_top", 12)
@@ -97,6 +127,7 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	_pause_button.text = "Resume" if Clock.paused else "Pause"
 	_speed_button.text = "Speed  x%.0f" % Clock.time_scale
+	_update_facility_action()
 	if Game.needs == null:
 		return
 	_info.text = "Day %d  %s   %s  x%.2f   Score %.0f   €%.0f   Mult x%.2f\n[tap: move]  [space: pause]  [ [ / ] : speed ]  [R: new run]" % [
@@ -120,3 +151,23 @@ func _process(_delta: float) -> void:
 			Audience.zone_name(_enjoy_node.current_zone),
 			_enjoy_node.current_rate,
 		]
+
+func _update_facility_action() -> void:
+	if Game.facility_queue != null and Game.facility_queue.is_active():
+		_facility_button.visible = true
+		_facility_button.text = "Leave Queue  (%.1f min left)" % Game.facility_queue.remaining_minutes
+		return
+	var player := get_tree().get_first_node_in_group("player") as Node2D
+	_nearby_facility = Game.nearest_facility(player.global_position) if player != null else null
+	_facility_button.visible = _nearby_facility != null
+	if _nearby_facility != null:
+		_facility_button.text = "Use %s  •  Queue %.1f min" % [
+			_nearby_facility.display_name, Game.queue_preview(_nearby_facility)]
+
+func _on_facility_pressed() -> void:
+	if Game.facility_queue.is_active():
+		Game.interrupt_facility_queue()
+		return
+	var player := get_tree().get_first_node_in_group("player") as Node2D
+	if _nearby_facility != null and player != null:
+		Game.start_facility_queue(_nearby_facility, player.global_position)

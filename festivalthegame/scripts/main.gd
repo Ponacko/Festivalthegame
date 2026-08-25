@@ -71,7 +71,7 @@ func _on_configuration_submitted(configuration: RunConfiguration) -> void:
 	Clock.paused = false
 
 func _open_schedule() -> void:
-	if Game.lineup == null or _setup.visible:
+	if Game.lineup == null or _setup.visible or Game.facility_queue.is_active():
 		return
 	_planner_was_paused = Clock.paused
 	Clock.paused = true
@@ -81,7 +81,7 @@ func _on_schedule_closed() -> void:
 	Clock.paused = _planner_was_paused
 
 func _open_map() -> void:
-	if Game.grounds == null or _setup.visible or _schedule.visible:
+	if Game.grounds == null or _setup.visible or _schedule.visible or Game.facility_queue.is_active():
 		return
 	_map_was_paused = Clock.paused
 	Clock.paused = true

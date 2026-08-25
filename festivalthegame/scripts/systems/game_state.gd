@@ -12,6 +12,9 @@ signal morning_recap_requested(completed_day: int)
 signal autosave_requested(reason: String)
 signal final_scoring_requested
 signal run_completed
+signal facility_queue_started(facility_name: String, duration: float)
+signal facility_queue_finished(message: String)
+signal facility_queue_interrupted(message: String)
 
 enum RunStatus { NOT_STARTED, PLAYING, COMPLETE }
 
@@ -22,6 +25,7 @@ var current_configuration: RunConfiguration
 var run_seed := 0
 var budget := STARTING_BUDGET
 var score_ledger := ScoreLedger.new()
+var facility_queue := FacilityQueue.new()
 var run_status := RunStatus.NOT_STARTED
 var _festival_maximum := 0.0
 
@@ -48,6 +52,7 @@ func start_new_run(configuration: RunConfiguration = null, seed_value := -1) -> 
 	grounds = FestivalGroundsGenerator.generate(lineup, run_seed, current_configuration)
 	budget = STARTING_BUDGET
 	score_ledger = ScoreLedger.new()
+	facility_queue = FacilityQueue.new()
 	_festival_maximum = TheoreticalMaximum.calculate(lineup)
 	run_status = RunStatus.PLAYING
 	Clock.reset()
@@ -80,6 +85,45 @@ func score_percentage() -> float:
 func _on_time_advanced(minutes: float) -> void:
 	if needs != null:
 		needs.decay(minutes)
+	if facility_queue.is_active():
+		var message := facility_queue.advance(minutes, needs)
+		if not message.is_empty():
+			facility_queue_finished.emit(message)
+
+func queue_preview(facility: FestivalPoint) -> float:
+	if facility == null:
+		return 0.0
+	var density := CrowdField.density(lineup, facility.position, Clock.total_minutes)
+	return FacilityQueue.duration_for(facility.kind, density)
+
+func start_facility_queue(facility: FestivalPoint, player_position: Vector2) -> bool:
+	if facility == null or player_position.distance_to(facility.position) > 90.0:
+		return false
+	var density := CrowdField.density(lineup, facility.position, Clock.total_minutes)
+	if not facility_queue.start(facility, density):
+		return false
+	facility_queue_started.emit(facility.display_name, facility_queue.total_minutes)
+	return true
+
+func interrupt_facility_queue() -> bool:
+	var message := facility_queue.interrupt()
+	if message.is_empty():
+		return false
+	facility_queue_interrupted.emit(message)
+	return true
+
+func nearest_facility(world_position: Vector2, maximum_distance := 90.0) -> FestivalPoint:
+	if grounds == null:
+		return null
+	var closest: FestivalPoint = null
+	var closest_distance := maximum_distance
+	for kind in [FestivalPoint.Kind.WATER, FestivalPoint.Kind.TOILET]:
+		for point in grounds.points_of_kind(kind):
+			var distance := world_position.distance_to(point.position)
+			if distance <= closest_distance:
+				closest = point
+				closest_distance = distance
+	return closest
 
 func _on_night_started(day: int) -> void:
 	if day < FestivalTime.PLAYABLE_DAYS:
