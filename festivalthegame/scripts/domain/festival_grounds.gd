@@ -9,6 +9,13 @@ var bounds := Rect2(-1100, -700, 2200, 1400)
 var points: Array[FestivalPoint] = []
 var obstacles: Array[Rect2] = []
 var camp: Camp
+var vendors: Array[Vendor] = []
+
+func vendor_for_point(point: FestivalPoint) -> Vendor:
+	for vendor in vendors:
+		if vendor.point == point:
+			return vendor
+	return null
 
 func points_of_kind(kind: FestivalPoint.Kind) -> Array[FestivalPoint]:
 	var result: Array[FestivalPoint] = []

@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="2"]
@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" path="res://scenes/run_setup.tscn" id="5"]
 [ext_resource type="PackedScene" path="res://scenes/schedule.tscn" id="6"]
 [ext_resource type="PackedScene" path="res://scenes/festival_map.tscn" id="7"]
+[ext_resource type="PackedScene" path="res://scenes/vendor_menu.tscn" id="8"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1")
@@ -42,4 +43,10 @@ visible = false
 layer = 9
 
 [node name="FestivalMap" parent="MapLayer" instance=ExtResource("7")]
+visible = false
+
+[node name="VendorLayer" type="CanvasLayer" parent="."]
+layer = 9
+
+[node name="VendorMenu" parent="VendorLayer" instance=ExtResource("8")]
 visible = false

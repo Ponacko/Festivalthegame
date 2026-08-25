@@ -6,6 +6,7 @@ signal schedule_requested
 signal pause_requested
 signal speed_requested
 signal map_requested
+signal vendor_requested(vendor: Vendor)
 
 var _info: Label
 var _enjoy: Label
@@ -161,8 +162,11 @@ func _update_facility_action() -> void:
 	_nearby_facility = Game.nearest_facility(player.global_position) if player != null else null
 	_facility_button.visible = _nearby_facility != null
 	if _nearby_facility != null:
-		_facility_button.text = "Use %s  •  Queue %.1f min" % [
-			_nearby_facility.display_name, Game.queue_preview(_nearby_facility)]
+		if _nearby_facility.kind == FestivalPoint.Kind.VENDOR:
+			_facility_button.text = "Shop at %s" % _nearby_facility.display_name
+		else:
+			_facility_button.text = "Use %s  •  Queue %.1f min" % [
+				_nearby_facility.display_name, Game.queue_preview(_nearby_facility)]
 
 func _on_facility_pressed() -> void:
 	if Game.facility_queue.is_active():
@@ -170,4 +174,7 @@ func _on_facility_pressed() -> void:
 		return
 	var player := get_tree().get_first_node_in_group("player") as Node2D
 	if _nearby_facility != null and player != null:
-		Game.start_facility_queue(_nearby_facility, player.global_position)
+		if _nearby_facility.kind == FestivalPoint.Kind.VENDOR:
+			vendor_requested.emit(Game.grounds.vendor_for_point(_nearby_facility))
+		else:
+			Game.start_facility_queue(_nearby_facility, player.global_position)

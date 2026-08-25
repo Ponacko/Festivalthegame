@@ -45,6 +45,17 @@ func _ready() -> void:
 		facility_button.pressed.emit()
 		check(not Game.facility_queue.is_active() and facility_status.text.contains("left"),
 			"touch interaction can interrupt the Queue clearly")
+		var vendor := Game.grounds.vendors[0]
+		player_for_facility.position = vendor.point.position
+		await get_tree().process_frame
+		await get_tree().process_frame
+		facility_button.pressed.emit()
+		var vendor_menu := main.get_node("VendorLayer/VendorMenu") as VendorView
+		check(vendor_menu.visible and Clock.paused and vendor_menu.rendered_text().contains("markup"),
+			"nearby Vendor interaction opens its priced menu without advancing time (button: %s; visible: %s)" % [
+				facility_button.text, vendor_menu.visible])
+		vendor_menu.get_node("Panel/Margin/Content/Close").pressed.emit()
+		check(not vendor_menu.visible and not Clock.paused, "cancelling the Vendor menu resumes in place")
 
 	var pause_button := main.get_node_or_null("Hud/PauseButton") as Button
 	var speed_button := main.get_node_or_null("Hud/SpeedButton") as Button

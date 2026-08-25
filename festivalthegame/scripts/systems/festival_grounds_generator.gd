@@ -20,6 +20,7 @@ static func generate(lineup: Lineup, seed_value: int, configuration: RunConfigur
 	_add_group(grounds, rng, FestivalPoint.Kind.FIRST_AID, "First Aid", [Vector2(0, -570)], true)
 	_add_group(grounds, rng, FestivalPoint.Kind.LATE_VENDOR, "Late Food", [
 		Vector2(-690, 620), Vector2(690, 620)], true)
+	_build_vendors(grounds)
 	_select_camp(grounds, configuration)
 	return grounds
 
@@ -35,6 +36,15 @@ static func _select_camp(grounds: FestivalGrounds, configuration: RunConfigurati
 			point.display_name = "Camp — %s" % profile.display_name
 			grounds.camp = Camp.new(profile, point.position, configuration.friend_count)
 			return
+
+static func _build_vendors(grounds: FestivalGrounds) -> void:
+	var archetypes := VendorCatalog.all_archetypes()
+	var markups := [1.0, 1.15, 1.25, 1.10]
+	var points := grounds.points_of_kind(FestivalPoint.Kind.VENDOR)
+	for index in range(points.size()):
+		var vendor := Vendor.new(points[index], archetypes[index % archetypes.size()], markups[index % markups.size()])
+		vendor.point.display_name = vendor.archetype.display_name
+		grounds.vendors.append(vendor)
 
 static func _add_group(
 		grounds: FestivalGrounds,

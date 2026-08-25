@@ -15,6 +15,7 @@ signal run_completed
 signal facility_queue_started(facility_name: String, duration: float)
 signal facility_queue_finished(message: String)
 signal facility_queue_interrupted(message: String)
+signal vendor_purchase_rejected(message: String)
 
 enum RunStatus { NOT_STARTED, PLAYING, COMPLETE }
 
@@ -28,6 +29,8 @@ var score_ledger := ScoreLedger.new()
 var facility_queue := FacilityQueue.new()
 var run_status := RunStatus.NOT_STARTED
 var _festival_maximum := 0.0
+var _pending_vendor: Vendor
+var _pending_vendor_item: VendorItem
 
 func _ready() -> void:
 	Clock.time_advanced.connect(_on_time_advanced)
@@ -53,6 +56,8 @@ func start_new_run(configuration: RunConfiguration = null, seed_value := -1) -> 
 	budget = STARTING_BUDGET
 	score_ledger = ScoreLedger.new()
 	facility_queue = FacilityQueue.new()
+	_pending_vendor = null
+	_pending_vendor_item = null
 	_festival_maximum = TheoreticalMaximum.calculate(lineup)
 	run_status = RunStatus.PLAYING
 	Clock.reset()
@@ -88,6 +93,13 @@ func _on_time_advanced(minutes: float) -> void:
 	if facility_queue.is_active():
 		var message := facility_queue.advance(minutes, needs)
 		if not message.is_empty():
+			if _pending_vendor != null and _pending_vendor_item != null:
+				var price := _pending_vendor.price_for(_pending_vendor_item)
+				budget -= price
+				_pending_vendor_item.apply(needs)
+				message = "%s purchased for €%.2f." % [_pending_vendor_item.display_name, price]
+				_pending_vendor = null
+				_pending_vendor_item = null
 			facility_queue_finished.emit(message)
 
 func queue_preview(facility: FestivalPoint) -> float:
@@ -109,7 +121,25 @@ func interrupt_facility_queue() -> bool:
 	var message := facility_queue.interrupt()
 	if message.is_empty():
 		return false
+	_pending_vendor = null
+	_pending_vendor_item = null
 	facility_queue_interrupted.emit(message)
+	return true
+
+func vendor_queue_preview(vendor: Vendor) -> float:
+	return queue_preview(vendor.point) if vendor != null else 0.0
+
+func start_vendor_purchase(vendor: Vendor, item: VendorItem, player_position: Vector2) -> bool:
+	if vendor == null or item == null or not vendor.archetype.menu.has(item):
+		return false
+	var price := vendor.price_for(item)
+	if budget < price:
+		vendor_purchase_rejected.emit("Not enough Budget for %s (€%.2f)." % [item.display_name, price])
+		return false
+	if not start_facility_queue(vendor.point, player_position):
+		return false
+	_pending_vendor = vendor
+	_pending_vendor_item = item
 	return true
 
 func nearest_facility(world_position: Vector2, maximum_distance := 90.0) -> FestivalPoint:
@@ -117,7 +147,7 @@ func nearest_facility(world_position: Vector2, maximum_distance := 90.0) -> Fest
 		return null
 	var closest: FestivalPoint = null
 	var closest_distance := maximum_distance
-	for kind in [FestivalPoint.Kind.WATER, FestivalPoint.Kind.TOILET]:
+	for kind in [FestivalPoint.Kind.WATER, FestivalPoint.Kind.TOILET, FestivalPoint.Kind.VENDOR]:
 		for point in grounds.points_of_kind(kind):
 			var distance := world_position.distance_to(point.position)
 			if distance <= closest_distance:
