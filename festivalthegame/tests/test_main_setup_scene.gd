@@ -56,6 +56,11 @@ func _ready() -> void:
 				facility_button.text, vendor_menu.visible])
 		vendor_menu.get_node("Panel/Margin/Content/Close").pressed.emit()
 		check(not vendor_menu.visible and not Clock.paused, "cancelling the Vendor menu resumes in place")
+		Game.needs.adjust(Needs.Kind.ENERGY, -Needs.MAX)
+		await get_tree().process_frame
+		var first_aid := Game.grounds.points_of_kind(FestivalPoint.Kind.FIRST_AID)[0]
+		check(player_for_facility.position == first_aid.position,
+			"live Collapse flow relocates the player to First Aid")
 
 	var pause_button := main.get_node_or_null("Hud/PauseButton") as Button
 	var speed_button := main.get_node_or_null("Hud/SpeedButton") as Button

@@ -28,7 +28,7 @@ func _on_time_advanced(minutes: float) -> void:
 	_evaluate()
 
 func _score_attendance(interval_start: float, interval_end: float) -> void:
-	if _player == null or Game.lineup == null or Game.needs == null:
+	if Game.is_collapsed() or _player == null or Game.lineup == null or Game.needs == null:
 		return
 	var needs_mult := Game.needs.enjoyment_multiplier()
 	var boundaries: Array[float] = [interval_start, interval_end]

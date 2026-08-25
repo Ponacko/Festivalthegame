@@ -16,8 +16,16 @@ signal facility_queue_started(facility_name: String, duration: float)
 signal facility_queue_finished(message: String)
 signal facility_queue_interrupted(message: String)
 signal vendor_purchase_rejected(message: String)
+signal collapse_started(primary_need: int)
+signal collapse_completed(message: String)
+signal player_relocation_requested(world_position: Vector2)
 
 enum RunStatus { NOT_STARTED, PLAYING, COMPLETE }
+
+const COLLAPSE_MINUTES := 90.0
+const COLLAPSE_RESTORE := 35.0
+const COLLAPSE_MOOD := 20.0
+const COLLAPSE_NEEDS := [Needs.Kind.HUNGER, Needs.Kind.THIRST, Needs.Kind.ENERGY]
 
 var needs: Needs
 var lineup: Lineup
@@ -27,10 +35,12 @@ var run_seed := 0
 var budget := STARTING_BUDGET
 var score_ledger := ScoreLedger.new()
 var facility_queue := FacilityQueue.new()
+var run_events: Array[RunEvent] = []
 var run_status := RunStatus.NOT_STARTED
 var _festival_maximum := 0.0
 var _pending_vendor: Vendor
 var _pending_vendor_item: VendorItem
+var _collapsing := false
 
 func _ready() -> void:
 	Clock.time_advanced.connect(_on_time_advanced)
@@ -38,6 +48,9 @@ func _ready() -> void:
 	Clock.morning_started.connect(_on_morning_started)
 	Clock.run_completed.connect(_on_run_completed)
 	Clock.reset()
+
+func _process(_delta: float) -> void:
+	check_for_collapse()
 
 func start_new_run(configuration: RunConfiguration = null, seed_value := -1) -> void:
 	if configuration != null:
@@ -58,6 +71,8 @@ func start_new_run(configuration: RunConfiguration = null, seed_value := -1) -> 
 	facility_queue = FacilityQueue.new()
 	_pending_vendor = null
 	_pending_vendor_item = null
+	run_events.clear()
+	_collapsing = false
 	_festival_maximum = TheoreticalMaximum.calculate(lineup)
 	run_status = RunStatus.PLAYING
 	Clock.reset()
@@ -102,6 +117,36 @@ func _on_time_advanced(minutes: float) -> void:
 				_pending_vendor_item = null
 			facility_queue_finished.emit(message)
 
+func check_for_collapse() -> bool:
+	if _collapsing or needs == null or grounds == null or run_status != RunStatus.PLAYING:
+		return false
+	var failed: Array[int] = []
+	for kind in COLLAPSE_NEEDS:
+		if needs.is_empty(kind):
+			failed.append(kind)
+	if failed.is_empty():
+		return false
+	_collapsing = true
+	if facility_queue.is_active():
+		interrupt_facility_queue()
+	var names := PackedStringArray()
+	for kind in failed:
+		names.append(Needs.NAMES[kind])
+	run_events.append(RunEvent.new("collapse", Clock.total_minutes, ", ".join(names)))
+	collapse_started.emit(failed[0])
+	Clock.advance_game_minutes(COLLAPSE_MINUTES)
+	for kind in failed:
+		needs.adjust(kind, COLLAPSE_RESTORE - needs.get_value(kind))
+	needs.adjust(Needs.Kind.MOOD, COLLAPSE_MOOD - needs.get_value(Needs.Kind.MOOD))
+	var first_aid := grounds.points_of_kind(FestivalPoint.Kind.FIRST_AID)[0]
+	player_relocation_requested.emit(first_aid.position)
+	_collapsing = false
+	collapse_completed.emit("Recovered at First Aid after collapsing from %s." % ", ".join(names))
+	return true
+
+func is_collapsed() -> bool:
+	return _collapsing
+
 func queue_preview(facility: FestivalPoint) -> float:
 	if facility == null:
 		return 0.0
@@ -109,7 +154,7 @@ func queue_preview(facility: FestivalPoint) -> float:
 	return FacilityQueue.duration_for(facility.kind, density)
 
 func start_facility_queue(facility: FestivalPoint, player_position: Vector2) -> bool:
-	if facility == null or player_position.distance_to(facility.position) > 90.0:
+	if _collapsing or facility == null or player_position.distance_to(facility.position) > 90.0:
 		return false
 	var density := CrowdField.density(lineup, facility.position, Clock.total_minutes)
 	if not facility_queue.start(facility, density):
@@ -130,7 +175,7 @@ func vendor_queue_preview(vendor: Vendor) -> float:
 	return queue_preview(vendor.point) if vendor != null else 0.0
 
 func start_vendor_purchase(vendor: Vendor, item: VendorItem, player_position: Vector2) -> bool:
-	if vendor == null or item == null or not vendor.archetype.menu.has(item):
+	if _collapsing or vendor == null or item == null or not vendor.archetype.menu.has(item):
 		return false
 	var price := vendor.price_for(item)
 	if budget < price:

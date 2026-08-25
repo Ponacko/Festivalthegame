@@ -32,6 +32,15 @@ func advance(real_seconds: float) -> void:
 	if paused or _complete:
 		return
 	var game_minutes := (real_seconds / REAL_SECONDS_PER_GAME_MINUTE) * time_scale
+	_advance_game_minutes(game_minutes)
+
+## Applies a fixed simulation-time cost independent of the selected speed.
+func advance_game_minutes(game_minutes: float) -> void:
+	if _complete:
+		return
+	_advance_game_minutes(game_minutes)
+
+func _advance_game_minutes(game_minutes: float) -> void:
 	if game_minutes <= 0.0:
 		return
 	var previous := total_minutes

@@ -95,6 +95,9 @@ func _ready() -> void:
 		_facility_status.text = "Queueing at %s — %.1f min" % [facility_name, duration])
 	Game.facility_queue_finished.connect(func(message: String) -> void: _facility_status.text = message)
 	Game.facility_queue_interrupted.connect(func(message: String) -> void: _facility_status.text = message)
+	Game.collapse_started.connect(func(kind: int) -> void:
+		_facility_status.text = "Blackout — %s reached zero…" % Needs.NAMES[kind])
+	Game.collapse_completed.connect(func(message: String) -> void: _facility_status.text = message)
 
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 12)

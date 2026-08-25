@@ -24,6 +24,7 @@ func _ready() -> void:
 	_festival_map.closed.connect(_on_map_closed)
 	_vendor_view.closed.connect(_on_vendor_closed)
 	_vendor_view.purchase_requested.connect(_on_vendor_purchase_requested)
+	Game.player_relocation_requested.connect(_player.relocate_to)
 	_open_setup()
 	_spawn_stage_views()
 	_spawn_ground_features()
