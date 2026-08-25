@@ -23,5 +23,9 @@ func for_artist(artist: Artist, favorites: Array[FavoriteArtistPreference]) -> f
 			nearest_distance = candidate
 	if nearest_distance < 0:
 		return MIN_AFFINITY
-	return maxf(MIN_AFFINITY, SAME_GENRE_AFFINITY * pow(DECAY_PER_EDGE, nearest_distance))
+	return from_distance(nearest_distance)
 
+static func from_distance(distance: int) -> float:
+	if distance < 0:
+		return MIN_AFFINITY
+	return maxf(MIN_AFFINITY, SAME_GENRE_AFFINITY * pow(DECAY_PER_EDGE, distance))

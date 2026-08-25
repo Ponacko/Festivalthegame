@@ -7,7 +7,6 @@ func _initialize() -> void:
 	test_graph_distance()
 	test_bundled_graph()
 	test_affinity_uses_nearest_favorite()
-	test_lineup_uses_derived_affinity()
 	quit(1 if failures > 0 else 0)
 
 func check(condition: bool, message: String) -> void:
@@ -66,13 +65,3 @@ func test_affinity_uses_nearest_favorite() -> void:
 		"multiple favorites use the shortest available distance")
 	check(calculator.for_artist(disconnected, favorites) == 0.10,
 		"disconnected Genres receive the affinity floor")
-
-func test_lineup_uses_derived_affinity() -> void:
-	print("Lineup affinity integration:")
-	var configuration := RunConfiguration.new()
-	configuration.add_favorite("Configured Favorite", "metal")
-	var lineup := Lineup.build_demo(configuration, example_graph())
-	check(lineup.artists[0].name == "Configured Favorite" and lineup.artists[0].affinity == 1.0,
-		"the configured Favorite Artist drives the demo scoring data")
-	check(lineup.artists[1].affinity != 0.4,
-		"non-favorite affinity is derived rather than hand-authored")

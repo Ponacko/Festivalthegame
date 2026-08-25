@@ -21,6 +21,8 @@ func _ready() -> void:
 
 	check(not setup.visible, "submitting setup reveals the Festival")
 	check(Game.current_configuration == config, "the Run retains its submitted configuration")
+	check(Game.lineup.stages.size() == 4 and Game.lineup.artists.size() >= 100,
+		"submitting setup generates the complete Festival")
 	check(not Clock.paused, "Festival time starts after setup")
 
 	if failures == 0:

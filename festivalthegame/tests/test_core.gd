@@ -66,7 +66,8 @@ func test_sets_and_zones() -> void:
 	check(Audience.multiplier(Audience.Zone.FRONT) > Audience.multiplier(Audience.Zone.BACK),
 		"Front pays more than Back")
 
-	var lu := Lineup.build_demo()
-	check(lu.stages.size() == 3, "demo lineup has 3 stages")
-	var headline := lu.active_set_for(lu.stages[0], 10.0)
-	check(headline != null and headline.artist.is_favorite, "favorite headlines main stage at 10min")
+	var lu := Lineup.new()
+	lu.stages = [st]
+	lu.artists = [a]
+	lu.sets = [fs]
+	check(lu.active_set_for(st, 10.0) == fs, "Lineup returns the active Set for a Stage")

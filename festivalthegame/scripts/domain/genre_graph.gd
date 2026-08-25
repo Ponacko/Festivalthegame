@@ -60,6 +60,24 @@ func genre_count() -> int:
 func edge_count() -> int:
 	return _edge_total
 
+func distances_from(start_ids: PackedStringArray) -> Dictionary:
+	var distances := {}
+	var frontier: Array[String] = []
+	for genre_id in start_ids:
+		if _known.has(genre_id) and not distances.has(genre_id):
+			distances[genre_id] = 0
+			frontier.append(genre_id)
+	while not frontier.is_empty():
+		var next_frontier: Array[String] = []
+		for genre_id in frontier:
+			var next_distance: int = distances[genre_id] + 1
+			for neighbor_id: String in _neighbors[genre_id]:
+				if not distances.has(neighbor_id):
+					distances[neighbor_id] = next_distance
+					next_frontier.append(neighbor_id)
+		frontier = next_frontier
+	return distances
+
 func _connect(from_id: String, to_id: String) -> void:
 	_register(from_id)
 	_register(to_id)

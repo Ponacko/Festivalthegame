@@ -33,6 +33,9 @@ static func load_bundled() -> GenreCatalog:
 func size() -> int:
 	return _entries.size()
 
+func all_entries() -> Array[GenreEntry]:
+	return _entries.duplicate()
+
 func find_by_id(genre_id: String) -> GenreEntry:
 	return _by_id.get(genre_id)
 
@@ -47,4 +50,3 @@ func search(query: String, limit := 12) -> Array[GenreEntry]:
 			if matches.size() >= limit:
 				break
 	return matches
-
