@@ -9,12 +9,15 @@ signal configuration_submitted(configuration: RunConfiguration)
 @onready var _suggestions: ItemList = $Panel/Margin/Content/GenreSuggestions
 @onready var _favorites_label: Label = $Panel/Margin/Content/Favorites
 @onready var _friend_count: SpinBox = $Panel/Margin/Content/FriendCount
+@onready var _campsite: OptionButton = $Panel/Margin/Content/Campsite
+@onready var _campsite_details: Label = $Panel/Margin/Content/CampsiteDetails
 @onready var _error: Label = $Panel/Margin/Content/Error
 
 var _catalog: GenreCatalog
 var _favorites: Array[FavoriteArtistPreference] = []
 var _visible_genres: Array[GenreEntry] = []
 var _selected_genre: GenreEntry
+var _selected_campsite_id := ""
 
 func _ready() -> void:
 	_catalog = GenreCatalog.load_bundled()
@@ -24,6 +27,11 @@ func _ready() -> void:
 	$Panel/Margin/Content/Entry/AddFavorite.pressed.connect(_on_add_favorite)
 	$Panel/Margin/Content/RemoveFavorite.pressed.connect(_on_remove_favorite)
 	$Panel/Margin/Content/StartButton.pressed.connect(_on_start)
+	for profile in CampsiteCatalog.all_profiles():
+		_campsite.add_item(profile.display_name)
+		_campsite.set_item_metadata(_campsite.item_count - 1, profile.id)
+	_campsite.select(-1)
+	_campsite.item_selected.connect(_on_campsite_selected)
 	_on_genre_search_changed("")
 	_update_favorites_label()
 
@@ -35,6 +43,9 @@ func reset() -> void:
 	_artist_name.clear()
 	_genre_search.clear()
 	_friend_count.value = 0
+	_campsite.select(-1)
+	_selected_campsite_id = ""
+	_campsite_details.text = "Select a campsite to compare its trade-offs."
 	_selected_genre = null
 	_error.text = ""
 	_on_genre_search_changed("")
@@ -93,12 +104,20 @@ func _on_start() -> void:
 	for favorite in _favorites:
 		configuration.add_favorite(favorite.artist_name, favorite.genre_id)
 	configuration.set_friend_count(int(_friend_count.value))
+	configuration.select_campsite(_selected_campsite_id)
 	var errors := configuration.validation_errors()
 	if not errors.is_empty():
 		_error.text = "\n".join(errors)
 		return
 	_error.text = ""
 	configuration_submitted.emit(configuration)
+
+func _on_campsite_selected(index: int) -> void:
+	if index < 0 or index >= _campsite.item_count:
+		return
+	_selected_campsite_id = str(_campsite.get_item_metadata(index))
+	var profile := CampsiteCatalog.find(_selected_campsite_id)
+	_campsite_details.text = profile.tradeoff_summary() if profile != null else ""
 
 func _update_favorites_label() -> void:
 	if _favorites.is_empty():
@@ -109,4 +128,3 @@ func _update_favorites_label() -> void:
 		var genre := _catalog.find_by_id(favorite.genre_id)
 		lines.append("• %s — %s" % [favorite.artist_name, genre.display_name if genre else favorite.genre_id])
 	_favorites_label.text = "\n".join(lines)
-

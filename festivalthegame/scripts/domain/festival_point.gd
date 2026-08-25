@@ -2,11 +2,12 @@ class_name FestivalPoint
 extends RefCounted
 ## A named destination shared by the world, navigation, and in-game map.
 
-enum Kind { STAGE, CAMPSITE_AREA, VENDOR, TOILET, WATER, FIRST_AID, LATE_VENDOR }
+enum Kind { STAGE, CAMPSITE_AREA, VENDOR, TOILET, WATER, FIRST_AID, LATE_VENDOR, CAMP }
 
 const ALL_KINDS := [
 	Kind.STAGE, Kind.CAMPSITE_AREA, Kind.VENDOR, Kind.TOILET,
 	Kind.WATER, Kind.FIRST_AID, Kind.LATE_VENDOR,
+	Kind.CAMP,
 ]
 
 var id: String
@@ -29,4 +30,5 @@ static func kind_name(value: Kind) -> String:
 		Kind.WATER: return "Water taps"
 		Kind.FIRST_AID: return "First Aid"
 		Kind.LATE_VENDOR: return "Late-night Vendors"
+		Kind.CAMP: return "Selected Camp"
 	return "Destination"

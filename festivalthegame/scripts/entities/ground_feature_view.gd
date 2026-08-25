@@ -23,6 +23,7 @@ func _draw() -> void:
 func _color_for(kind: FestivalPoint.Kind) -> Color:
 	match kind:
 		FestivalPoint.Kind.CAMPSITE_AREA: return Color("77a866")
+		FestivalPoint.Kind.CAMP: return Color("b8e986")
 		FestivalPoint.Kind.VENDOR, FestivalPoint.Kind.LATE_VENDOR: return Color("e6a15c")
 		FestivalPoint.Kind.TOILET: return Color("b68ce0")
 		FestivalPoint.Kind.WATER: return Color("55bde8")

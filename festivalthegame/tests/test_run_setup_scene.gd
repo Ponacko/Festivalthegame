@@ -32,12 +32,22 @@ func _ready() -> void:
 
 	var friends := setup.get_node("Panel/Margin/Content/FriendCount") as SpinBox
 	friends.value = 4
+	var campsite := setup.get_node("Panel/Margin/Content/Campsite") as OptionButton
+	check(campsite.item_count == 3, "setup presents all campsite trade-offs")
+	campsite.select(1)
+	campsite.item_selected.emit(1)
+	var campsite_details := setup.get_node("Panel/Margin/Content/CampsiteDetails") as Label
+	check(campsite_details.text.contains("Walk") and campsite_details.text.contains("Sleep") \
+		and campsite_details.text.contains("Noise") and campsite_details.text.contains("Nightlife"),
+		"selected campsite clearly shows every trade-off")
 	start_button.pressed.emit()
 	check(submitted_configuration != null, "valid setup emits a Run configuration")
 	check(submitted_configuration.favorites[0].artist_name == "My Favourite",
 		"submitted configuration keeps the Favorite Artist")
 	check(submitted_configuration.friend_count == 4,
 		"submitted configuration keeps the Friend count")
+	check(submitted_configuration.campsite_id == "camp_2",
+		"submitted configuration keeps exactly one campsite")
 
 	if failures == 0:
 		print("ALL RUN SETUP SCENE TESTS PASSED")

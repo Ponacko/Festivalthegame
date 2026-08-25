@@ -2,7 +2,7 @@ class_name FestivalGroundsGenerator
 extends RefCounted
 ## Seeded placement of every v1 destination on a connected site.
 
-static func generate(lineup: Lineup, seed_value: int) -> FestivalGrounds:
+static func generate(lineup: Lineup, seed_value: int, configuration: RunConfiguration = null) -> FestivalGrounds:
 	var grounds := FestivalGrounds.new()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value ^ 0x47524f554e4453
@@ -20,7 +20,21 @@ static func generate(lineup: Lineup, seed_value: int) -> FestivalGrounds:
 	_add_group(grounds, rng, FestivalPoint.Kind.FIRST_AID, "First Aid", [Vector2(0, -570)], true)
 	_add_group(grounds, rng, FestivalPoint.Kind.LATE_VENDOR, "Late Food", [
 		Vector2(-690, 620), Vector2(690, 620)], true)
+	_select_camp(grounds, configuration)
 	return grounds
+
+static func _select_camp(grounds: FestivalGrounds, configuration: RunConfiguration) -> void:
+	if configuration == null:
+		return
+	var profile := CampsiteCatalog.find(configuration.campsite_id)
+	if profile == null:
+		return
+	for point in grounds.points:
+		if point.id == profile.id:
+			point.kind = FestivalPoint.Kind.CAMP
+			point.display_name = "Camp — %s" % profile.display_name
+			grounds.camp = Camp.new(profile, point.position, configuration.friend_count)
+			return
 
 static func _add_group(
 		grounds: FestivalGrounds,

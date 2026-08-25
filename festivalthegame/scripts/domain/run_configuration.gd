@@ -9,12 +9,27 @@ const MAX_FRIENDS := 4
 
 var favorites: Array[FavoriteArtistPreference] = []
 var friend_count := 0
+var campsite_id := ""
+var _locked := false
 
 func add_favorite(artist_name: String, genre_id: String) -> void:
+	if _locked:
+		return
 	favorites.append(FavoriteArtistPreference.new(artist_name, genre_id))
 
 func set_friend_count(value: int) -> void:
+	if _locked:
+		return
 	friend_count = value
+
+func select_campsite(value: String) -> bool:
+	if _locked or CampsiteCatalog.find(value) == null:
+		return false
+	campsite_id = value
+	return true
+
+func lock() -> void:
+	_locked = true
 
 func validation_errors() -> PackedStringArray:
 	var errors := PackedStringArray()
@@ -24,6 +39,8 @@ func validation_errors() -> PackedStringArray:
 		errors.append("Choose no more than %d Favorite Artists." % MAX_FAVORITES)
 	if friend_count < MIN_FRIENDS or friend_count > MAX_FRIENDS:
 		errors.append("Choose between %d and %d Friends." % [MIN_FRIENDS, MAX_FRIENDS])
+	if CampsiteCatalog.find(campsite_id) == null:
+		errors.append("Choose one campsite for the Run.")
 	var seen_names := {}
 	for favorite in favorites:
 		if favorite.artist_name.is_empty():

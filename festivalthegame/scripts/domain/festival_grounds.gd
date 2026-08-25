@@ -8,6 +8,7 @@ const NAVIGATION_MARGIN := 18.0
 var bounds := Rect2(-1100, -700, 2200, 1400)
 var points: Array[FestivalPoint] = []
 var obstacles: Array[Rect2] = []
+var camp: Camp
 
 func points_of_kind(kind: FestivalPoint.Kind) -> Array[FestivalPoint]:
 	var result: Array[FestivalPoint] = []

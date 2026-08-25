@@ -38,13 +38,14 @@ func start_new_run(configuration: RunConfiguration = null, seed_value := -1) -> 
 	elif current_configuration == null:
 		current_configuration = _default_configuration()
 	run_seed = seed_value if seed_value >= 0 else _new_seed()
+	current_configuration.lock()
 	needs = Needs.new()
 	lineup = FestivalGenerator.generate(
 		current_configuration,
 		run_seed,
 		GenreCatalog.load_bundled(),
 		GenreGraph.load_bundled())
-	grounds = FestivalGroundsGenerator.generate(lineup, run_seed)
+	grounds = FestivalGroundsGenerator.generate(lineup, run_seed, current_configuration)
 	budget = STARTING_BUDGET
 	score_ledger = ScoreLedger.new()
 	_festival_maximum = TheoreticalMaximum.calculate(lineup)
@@ -98,6 +99,7 @@ func _on_run_completed() -> void:
 func _default_configuration() -> RunConfiguration:
 	var configuration := RunConfiguration.new()
 	configuration.add_favorite("Your Favourite", "f66d7266-eb3d-4ef3-b4d8-b7cd992f918b")
+	configuration.select_campsite("camp_1")
 	return configuration
 
 func _new_seed() -> int:

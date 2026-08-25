@@ -6,11 +6,13 @@ var failures := 0
 func _initialize() -> void:
 	var config := RunConfiguration.new()
 	config.add_favorite("Favorite", "cc28f5aa-5e19-487c-88e1-e56b022f1fdd")
+	config.set_friend_count(3)
+	config.select_campsite("camp_2")
 	var lineup := FestivalGenerator.generate(
 		config, 707, GenreCatalog.load_bundled(), GenreGraph.load_bundled())
-	var first := FestivalGroundsGenerator.generate(lineup, 707)
-	var repeated := FestivalGroundsGenerator.generate(lineup, 707)
-	var different := FestivalGroundsGenerator.generate(lineup, 708)
+	var first := FestivalGroundsGenerator.generate(lineup, 707, config)
+	var repeated := FestivalGroundsGenerator.generate(lineup, 707, config)
+	var different := FestivalGroundsGenerator.generate(lineup, 708, config)
 
 	check(first.placement_signature() == repeated.placement_signature(), "same Run seed reproduces destination placement")
 	check(first.placement_signature() != different.placement_signature(), "another Run seed changes generated placement")
@@ -22,10 +24,14 @@ func _initialize() -> void:
 		FestivalPoint.Kind.WATER,
 		FestivalPoint.Kind.FIRST_AID,
 		FestivalPoint.Kind.LATE_VENDOR,
+		FestivalPoint.Kind.CAMP,
 	]
 	for kind in required:
 		check(not first.points_of_kind(kind).is_empty(), "%s destinations are present" % FestivalPoint.kind_name(kind))
 	check(first.points_of_kind(FestivalPoint.Kind.STAGE).size() == 4, "all generated Stages are placed on the grounds")
+	check(first.camp != null and first.camp.friend_count == 3, "all configured Friends share the selected camp")
+	check(first.camp.can_change_clothes and first.is_walkable(first.camp.interaction_position),
+		"camp exposes a reachable changing and night-choice interaction point")
 
 	var separated := true
 	for left_index in range(first.points.size()):

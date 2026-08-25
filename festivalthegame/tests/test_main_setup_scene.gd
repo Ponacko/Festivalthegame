@@ -16,6 +16,7 @@ func _ready() -> void:
 	var config := RunConfiguration.new()
 	config.add_favorite("My Favourite", "f66d7266-eb3d-4ef3-b4d8-b7cd992f918b")
 	config.set_friend_count(2)
+	config.select_campsite("camp_1")
 	setup.configuration_submitted.emit(config)
 	await get_tree().process_frame
 
@@ -23,6 +24,8 @@ func _ready() -> void:
 	check(Game.current_configuration == config, "the Run retains its submitted configuration")
 	check(Game.lineup.stages.size() == 4 and Game.lineup.artists.size() >= 100,
 		"submitting setup generates the complete Festival")
+	check(Game.grounds.camp != null and Game.grounds.camp.friend_count == 2,
+		"the selected campsite becomes the whole group's home base")
 	check(not Clock.paused, "Festival time starts after setup")
 
 	var pause_button := main.get_node_or_null("Hud/PauseButton") as Button
