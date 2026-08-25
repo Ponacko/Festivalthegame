@@ -100,6 +100,7 @@ func _ready() -> void:
 	Game.collapse_completed.connect(func(message: String) -> void: _facility_status.text = message)
 	Game.bladder_accident_occurred.connect(func(message: String) -> void: _facility_status.text = message)
 	Game.clothes_changed.connect(func(message: String) -> void: _facility_status.text = message)
+	Game.food_poisoning_status.connect(func(message: String) -> void: _facility_status.text = message)
 
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 12)

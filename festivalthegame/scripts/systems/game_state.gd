@@ -21,6 +21,7 @@ signal collapse_completed(message: String)
 signal player_relocation_requested(world_position: Vector2)
 signal bladder_accident_occurred(message: String)
 signal clothes_changed(message: String)
+signal food_poisoning_status(message: String)
 
 enum RunStatus { NOT_STARTED, PLAYING, COMPLETE }
 
@@ -40,6 +41,8 @@ var run_seed := 0
 var budget := STARTING_BUDGET
 var score_ledger := ScoreLedger.new()
 var facility_queue := FacilityQueue.new()
+var food_poisoning := FoodPoisoning.new()
+var poisoning_roll_count := 0
 var run_events: Array[RunEvent] = []
 var run_status := RunStatus.NOT_STARTED
 var _festival_maximum := 0.0
@@ -48,6 +51,7 @@ var _pending_vendor_item: VendorItem
 var _collapsing := false
 var _accident_penalty := false
 var _changing_clothes := false
+var _poison_rng := RandomNumberGenerator.new()
 
 func _ready() -> void:
 	Clock.time_advanced.connect(_on_time_advanced)
@@ -77,6 +81,9 @@ func start_new_run(configuration: RunConfiguration = null, seed_value := -1) -> 
 	budget = STARTING_BUDGET
 	score_ledger = ScoreLedger.new()
 	facility_queue = FacilityQueue.new()
+	food_poisoning = FoodPoisoning.new()
+	poisoning_roll_count = 0
+	_poison_rng.seed = run_seed ^ 0x504f49534f4e
 	_pending_vendor = null
 	_pending_vendor_item = null
 	run_events.clear()
@@ -115,6 +122,9 @@ func score_percentage() -> float:
 func _on_time_advanced(minutes: float) -> void:
 	if needs != null:
 		needs.decay(minutes)
+	var poisoning_events := food_poisoning.advance(minutes, needs)
+	for event in poisoning_events:
+		_record_poisoning_event(event)
 	if facility_queue.is_active():
 		var message := facility_queue.advance(minutes, needs)
 		if not message.is_empty():
@@ -122,10 +132,31 @@ func _on_time_advanced(minutes: float) -> void:
 				var price := _pending_vendor.price_for(_pending_vendor_item)
 				budget -= price
 				_pending_vendor_item.apply(needs)
+				_roll_food_poisoning(_pending_vendor_item)
+				food_poisoning.enforce_mood(needs)
 				message = "%s purchased for €%.2f." % [_pending_vendor_item.display_name, price]
 				_pending_vendor = null
 				_pending_vendor_item = null
 			facility_queue_finished.emit(message)
+
+func _roll_food_poisoning(item: VendorItem) -> void:
+	if not item.is_food:
+		return
+	poisoning_roll_count += 1
+	if FoodPoisoning.roll(item.poisoning_risk, _poison_rng):
+		food_poisoning.schedule()
+
+func _record_poisoning_event(event: String) -> void:
+	match event:
+		"onset":
+			run_events.append(RunEvent.new("food_poisoning_onset", Clock.total_minutes, "Food Poisoning symptoms began"))
+			food_poisoning_status.emit("Food Poisoning — find water and stay near toilets.")
+		"urgent":
+			run_events.append(RunEvent.new("food_poisoning_urgent", Clock.total_minutes, "Urgent toilet pressure"))
+			food_poisoning_status.emit("Food Poisoning: urgent toilet pressure!")
+		"recovered":
+			run_events.append(RunEvent.new("food_poisoning_recovered", Clock.total_minutes, "Recovered from Food Poisoning"))
+			food_poisoning_status.emit("Food Poisoning has passed.")
 
 func check_for_collapse() -> bool:
 	if _collapsing or needs == null or grounds == null or run_status != RunStatus.PLAYING:
