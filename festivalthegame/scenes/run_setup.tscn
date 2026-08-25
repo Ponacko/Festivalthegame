@@ -1,0 +1,99 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/run_setup.gd" id="1"]
+
+[node name="RunSetup" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1")
+
+[node name="Panel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Margin" type="MarginContainer" parent="Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 48
+theme_override_constants/margin_top = 28
+theme_override_constants/margin_right = 48
+theme_override_constants/margin_bottom = 28
+
+[node name="Content" type="VBoxContainer" parent="Panel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Title" type="Label" parent="Panel/Margin/Content"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "Plan your Festival"
+
+[node name="Instructions" type="Label" parent="Panel/Margin/Content"]
+layout_mode = 2
+text = "Add 1–10 Favorite Artists and tag each with a Genre. All Genre data is bundled for offline play."
+autowrap_mode = 2
+
+[node name="Entry" type="HBoxContainer" parent="Panel/Margin/Content"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ArtistName" type="LineEdit" parent="Panel/Margin/Content/Entry"]
+custom_minimum_size = Vector2(260, 48)
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Favorite Artist"
+
+[node name="GenreSearch" type="LineEdit" parent="Panel/Margin/Content/Entry"]
+custom_minimum_size = Vector2(260, 48)
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Search Genres"
+
+[node name="AddFavorite" type="Button" parent="Panel/Margin/Content/Entry"]
+custom_minimum_size = Vector2(140, 48)
+layout_mode = 2
+text = "Add Artist"
+
+[node name="GenreSuggestions" type="ItemList" parent="Panel/Margin/Content"]
+custom_minimum_size = Vector2(0, 170)
+layout_mode = 2
+allow_reselect = true
+
+[node name="Favorites" type="Label" parent="Panel/Margin/Content"]
+custom_minimum_size = Vector2(0, 82)
+layout_mode = 2
+text = "Favorite Artists"
+
+[node name="RemoveFavorite" type="Button" parent="Panel/Margin/Content"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+text = "Remove last Artist"
+
+[node name="FriendPrompt" type="Label" parent="Panel/Margin/Content"]
+layout_mode = 2
+text = "Friends attending (0–4)"
+
+[node name="FriendCount" type="SpinBox" parent="Panel/Margin/Content"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+max_value = 4.0
+allow_greater = false
+allow_lesser = false
+
+[node name="Error" type="Label" parent="Panel/Margin/Content"]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.35, 0.35, 1)
+autowrap_mode = 2
+
+[node name="StartButton" type="Button" parent="Panel/Margin/Content"]
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+text = "Generate Festival"

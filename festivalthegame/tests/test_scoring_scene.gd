@@ -6,6 +6,7 @@ extends Node
 var failures := 0
 
 func _ready() -> void:
+	Game.start_new_run()
 	var main_stage: Stage = Game.lineup.stages[0]
 
 	var player := Node2D.new()
