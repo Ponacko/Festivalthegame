@@ -3,6 +3,11 @@ extends RefCounted
 ## Bundled v1 food and non-alcoholic drink archetypes.
 
 static func all_archetypes() -> Array[VendorArchetype]:
+	var bar_menu: Array[VendorItem] = [
+		AlcoholItem.new("lager", "Sunset Lager", 5.0, 6.0, 6.0, -16.0, 0.20, 60.0),
+		AlcoholItem.new("cider", "Apple Cider", 6.0, 8.0, 5.0, -14.0, 0.25, 75.0),
+		AlcoholItem.new("cocktail", "Neon Cocktail", 9.0, 12.0, 8.0, -20.0, 0.40, 90.0),
+	]
 	return [
 		VendorArchetype.new("quick_bites", "Quick Bites", [
 			VendorItem.new("fries", "Festival Fries", 5.0, {Needs.Kind.HUNGER: 24.0}, 5.0, 0.06, true),
@@ -23,4 +28,5 @@ static func all_archetypes() -> Array[VendorArchetype]:
 			VendorItem.new("soda", "Festival Soda", 4.0,
 				{Needs.Kind.THIRST: 20.0, Needs.Kind.BLADDER: -10.0}, 4.0, 0.0, false),
 		]),
+		VendorArchetype.new("festival_bar", "Festival Bar", bar_menu),
 	]

@@ -146,6 +146,9 @@ func _process(_delta: float) -> void:
 		Game.budget,
 		Game.needs.enjoyment_multiplier(),
 	]
+	if Game.tipsy.is_active():
+		_info.text += "\nTipsy %.0f%%  •  %.0f min remaining" % [
+			Game.tipsy.level * 100.0, Game.tipsy.remaining_minutes]
 	for k in Needs.ALL:
 		_bars[k].value = Game.needs.get_value(k)
 

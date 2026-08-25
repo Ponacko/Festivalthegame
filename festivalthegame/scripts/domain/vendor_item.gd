@@ -26,10 +26,13 @@ func _init(
 	poisoning_risk = clampf(p_risk, 0.0, 1.0)
 	is_food = p_is_food
 
-func apply(needs: Needs) -> void:
+func apply(needs: Needs, mood_social_multiplier := 1.0) -> void:
 	for kind in need_restoration:
-		needs.adjust(kind, float(need_restoration[kind]))
-	needs.adjust(Needs.Kind.MOOD, mood_bonus)
+		var amount := float(need_restoration[kind])
+		if amount > 0.0 and kind in [Needs.Kind.MOOD, Needs.Kind.SOCIAL]:
+			amount *= mood_social_multiplier
+		needs.adjust(kind, amount)
+	needs.adjust(Needs.Kind.MOOD, mood_bonus * mood_social_multiplier)
 
 func effect_summary() -> String:
 	var parts := PackedStringArray()

@@ -17,7 +17,8 @@ func _initialize() -> void:
 				and item.poisoning_risk >= 0.0, "every item declares restoration, Mood, and poisoning risk")
 			if item.is_food and item.base_price <= 6.0:
 				has_affordable_food = true
-			if not item.is_food and item.need_restoration.has(Needs.Kind.BLADDER):
+			if not item.is_food and not item is AlcoholItem \
+					and item.need_restoration.has(Needs.Kind.BLADDER):
 				bladder_drink = item
 	check(has_affordable_food, "at least one food option is affordable from the starting Budget")
 	var item := archetypes[0].menu[0]

@@ -42,6 +42,7 @@ var budget := STARTING_BUDGET
 var score_ledger := ScoreLedger.new()
 var facility_queue := FacilityQueue.new()
 var food_poisoning := FoodPoisoning.new()
+var tipsy := TipsyState.new()
 var poisoning_roll_count := 0
 var run_events: Array[RunEvent] = []
 var run_status := RunStatus.NOT_STARTED
@@ -82,6 +83,7 @@ func start_new_run(configuration: RunConfiguration = null, seed_value := -1) -> 
 	score_ledger = ScoreLedger.new()
 	facility_queue = FacilityQueue.new()
 	food_poisoning = FoodPoisoning.new()
+	tipsy = TipsyState.new()
 	poisoning_roll_count = 0
 	_poison_rng.seed = run_seed ^ 0x504f49534f4e
 	_pending_vendor = null
@@ -125,13 +127,17 @@ func _on_time_advanced(minutes: float) -> void:
 	var poisoning_events := food_poisoning.advance(minutes, needs)
 	for event in poisoning_events:
 		_record_poisoning_event(event)
+	if tipsy.advance(minutes, needs):
+		food_poisoning_status.emit("Tipsy effects have worn off.")
 	if facility_queue.is_active():
 		var message := facility_queue.advance(minutes, needs)
 		if not message.is_empty():
 			if _pending_vendor != null and _pending_vendor_item != null:
 				var price := _pending_vendor.price_for(_pending_vendor_item)
 				budget -= price
-				_pending_vendor_item.apply(needs)
+				if _pending_vendor_item is AlcoholItem:
+					tipsy.consume(_pending_vendor_item)
+				_pending_vendor_item.apply(needs, tipsy.gain_multiplier())
 				_roll_food_poisoning(_pending_vendor_item)
 				food_poisoning.enforce_mood(needs)
 				message = "%s purchased for €%.2f." % [_pending_vendor_item.display_name, price]
