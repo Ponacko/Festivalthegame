@@ -23,7 +23,7 @@ func start_new_run(configuration: RunConfiguration = null) -> void:
 	elif current_configuration == null:
 		current_configuration = _default_configuration()
 	needs = Needs.new()
-	lineup = Lineup.build_demo()
+	lineup = Lineup.build_demo(current_configuration, GenreGraph.load_bundled())
 	budget = STARTING_BUDGET
 	enjoyment_score = 0.0
 	Clock.reset()

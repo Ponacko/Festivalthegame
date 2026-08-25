@@ -1,8 +1,7 @@
 class_name Lineup
 extends RefCounted
-## The Festival's Stages, Artists, and scheduled Sets. Slice 2 uses a small
-## hand-authored demo; the procedural generator (with injected Schedule
-## Conflicts) replaces build_demo() in a later slice.
+## The Festival's Stages, Artists, and scheduled Sets. The procedural generator
+## replaces build_demo() in a later slice.
 
 var stages: Array[Stage] = []
 var artists: Array[Artist] = []
@@ -14,19 +13,27 @@ func active_set_for(stage: Stage, total_minutes: float) -> FestivalSet:
 			return s
 	return null
 
-static func build_demo() -> Lineup:
+static func build_demo(configuration: RunConfiguration = null, graph: GenreGraph = null) -> Lineup:
 	var lu := Lineup.new()
+	if configuration == null:
+		configuration = RunConfiguration.new()
+		configuration.add_favorite("Your Favourite", "cc28f5aa-5e19-487c-88e1-e56b022f1fdd")
+	if graph == null:
+		graph = GenreGraph.load_bundled()
 
 	var main_stage := Stage.new("main", "Main Stage", Vector2(-600, -400))
 	var tent := Stage.new("tent", "The Tent", Vector2(700, -200))
 	var field := Stage.new("field", "Field Stage", Vector2(400, 500))
 	lu.stages = [main_stage, tent, field]
 
-	# affinity: 1.0 = favorite; others are placeholders until the genre graph.
-	var headliner := Artist.new("Your Favourite", "metal", 0.95, true, 1.0)
-	var synth := Artist.new("Neon Casket", "synthpop", 0.6, false, 0.4)
-	var punks := Artist.new("The Landfills", "punk", 0.7, false, 0.7)
+	var first_favorite: FavoriteArtistPreference = configuration.favorites[0]
+	var headliner := Artist.new(first_favorite.artist_name, first_favorite.genre_id, 0.95, true)
+	var synth := Artist.new("Neon Casket", "988e91a3-3341-416d-b7f8-7dbef6848dac", 0.6)
+	var punks := Artist.new("The Landfills", "bd7e1d40-43b1-4ba5-97b3-05b891466962", 0.7)
 	lu.artists = [headliner, synth, punks]
+	var affinity := ArtistAffinity.new(graph)
+	for artist in lu.artists:
+		artist.affinity = affinity.for_artist(artist, configuration.favorites)
 
 	lu.sets = [
 		FestivalSet.new(headliner, main_stage, 0.0, 90.0),
