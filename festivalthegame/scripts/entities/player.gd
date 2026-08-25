@@ -10,6 +10,7 @@ const THIRST_PER_PIXEL := 0.01
 
 var _target: Vector2
 var _moving := false
+var _route: Array[Vector2] = []
 
 func _ready() -> void:
 	_target = global_position
@@ -20,8 +21,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		move_to(get_global_mouse_position())
 
 func move_to(world_position: Vector2) -> void:
-	_target = world_position
-	_moving = true
+	_route = Game.grounds.path(global_position, world_position) if Game.grounds != null else [world_position]
+	if not _route.is_empty():
+		_target = _route.pop_front()
+		_moving = true
 
 func _physics_process(_delta: float) -> void:
 	if Clock.paused:
@@ -31,8 +34,11 @@ func _physics_process(_delta: float) -> void:
 		return
 	var to_target := _target - global_position
 	if to_target.length() <= ARRIVE_DISTANCE:
-		_moving = false
-		velocity = Vector2.ZERO
+		if _route.is_empty():
+			_moving = false
+			velocity = Vector2.ZERO
+		else:
+			_target = _route.pop_front()
 		return
 	velocity = to_target.normalized() * SPEED * Clock.time_scale
 	var before := global_position

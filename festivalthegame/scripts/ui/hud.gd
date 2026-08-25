@@ -5,6 +5,7 @@ extends CanvasLayer
 signal schedule_requested
 signal pause_requested
 signal speed_requested
+signal map_requested
 
 var _info: Label
 var _enjoy: Label
@@ -50,6 +51,19 @@ func _ready() -> void:
 	_speed_button.offset_bottom = 192.0
 	_speed_button.pressed.connect(func() -> void: speed_requested.emit())
 	add_child(_speed_button)
+
+	var map_button := Button.new()
+	map_button.name = "MapButton"
+	map_button.text = "Map"
+	map_button.custom_minimum_size = Vector2(160, 52)
+	map_button.anchor_left = 1.0
+	map_button.anchor_right = 1.0
+	map_button.offset_left = -172.0
+	map_button.offset_top = 204.0
+	map_button.offset_right = -12.0
+	map_button.offset_bottom = 256.0
+	map_button.pressed.connect(func() -> void: map_requested.emit())
+	add_child(map_button)
 
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 12)

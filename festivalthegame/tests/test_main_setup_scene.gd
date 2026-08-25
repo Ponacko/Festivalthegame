@@ -39,6 +39,19 @@ func _ready() -> void:
 		check(Clock.time_scale > 1.0, "touch fast-forward control selects a faster speed")
 		check(Clock.total_minutes == before_minutes, "selecting fast-forward never advances time automatically")
 
+	var map_button := main.get_node_or_null("Hud/MapButton") as Button
+	var festival_map := main.get_node_or_null("MapLayer/FestivalMap") as FestivalMapView
+	check(map_button != null and festival_map != null, "playable HUD exposes the in-game map")
+	if map_button != null and festival_map != null:
+		var player := main.get_node("Player") as Node2D
+		var world_position := player.position
+		map_button.pressed.emit()
+		check(festival_map.visible and Clock.paused, "opening the map pauses the Festival")
+		check(player.position == world_position, "opening the map does not move the player")
+		var map_close := festival_map.get_node("Panel/Margin/Content/Close") as Button
+		map_close.pressed.emit()
+		check(not festival_map.visible and player.position == world_position, "closing the map returns in place")
+
 	var schedule_button := main.get_node_or_null("Hud/ScheduleButton") as Button
 	var schedule := main.get_node_or_null("PlannerLayer/Schedule") as ScheduleView
 	check(schedule_button != null and schedule != null, "playable HUD exposes the schedule planner")

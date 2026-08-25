@@ -17,6 +17,7 @@ enum RunStatus { NOT_STARTED, PLAYING, COMPLETE }
 
 var needs: Needs
 var lineup: Lineup
+var grounds: FestivalGrounds
 var current_configuration: RunConfiguration
 var run_seed := 0
 var budget := STARTING_BUDGET
@@ -43,6 +44,7 @@ func start_new_run(configuration: RunConfiguration = null, seed_value := -1) -> 
 		run_seed,
 		GenreCatalog.load_bundled(),
 		GenreGraph.load_bundled())
+	grounds = FestivalGroundsGenerator.generate(lineup, run_seed)
 	budget = STARTING_BUDGET
 	score_ledger = ScoreLedger.new()
 	_festival_maximum = TheoreticalMaximum.calculate(lineup)
