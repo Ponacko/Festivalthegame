@@ -45,6 +45,11 @@ static func _build_vendors(grounds: FestivalGrounds) -> void:
 		var vendor := Vendor.new(points[index], archetypes[index % archetypes.size()], markups[index % markups.size()])
 		vendor.point.display_name = vendor.archetype.display_name
 		grounds.vendors.append(vendor)
+	var late_archetype := archetypes[2]
+	for late_point in grounds.points_of_kind(FestivalPoint.Kind.LATE_VENDOR):
+		var late_vendor := Vendor.new(late_point, late_archetype, 1.15)
+		late_vendor.point.display_name = "Late-night %s" % late_archetype.display_name
+		grounds.vendors.append(late_vendor)
 
 static func _add_group(
 		grounds: FestivalGrounds,

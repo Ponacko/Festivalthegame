@@ -216,7 +216,7 @@ func _update_facility_action() -> void:
 			_facility_button.text = "Treat Injury at First Aid  •  %.0f min" % Game.INJURY_TREATMENT_MINUTES
 		elif _nearby_facility.kind == FestivalPoint.Kind.CAMP:
 			_facility_button.text = "Change clothes at Camp  •  %.0f min" % Game.CHANGE_CLOTHES_MINUTES
-		elif _nearby_facility.kind == FestivalPoint.Kind.VENDOR:
+		elif _nearby_facility.kind in [FestivalPoint.Kind.VENDOR, FestivalPoint.Kind.LATE_VENDOR]:
 			_facility_button.text = "Shop at %s" % _nearby_facility.display_name
 		else:
 			_facility_button.text = "Use %s  •  Queue %.1f min" % [
@@ -232,7 +232,7 @@ func _on_facility_pressed() -> void:
 			Game.treat_injury(player.global_position)
 		elif _nearby_facility.kind == FestivalPoint.Kind.CAMP:
 			Game.change_at_camp(player.global_position)
-		elif _nearby_facility.kind == FestivalPoint.Kind.VENDOR:
+		elif _nearby_facility.kind in [FestivalPoint.Kind.VENDOR, FestivalPoint.Kind.LATE_VENDOR]:
 			vendor_requested.emit(Game.grounds.vendor_for_point(_nearby_facility))
 		else:
 			Game.start_facility_queue(_nearby_facility, player.global_position)

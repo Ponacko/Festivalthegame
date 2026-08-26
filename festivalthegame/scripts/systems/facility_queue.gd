@@ -17,7 +17,7 @@ static func duration_for(kind: FestivalPoint.Kind, nearby_density: float) -> flo
 			return minf(2.0 + density * 6.0, MAX_QUEUE_MINUTES)
 		FestivalPoint.Kind.TOILET:
 			return minf(4.0 + density * 8.0, MAX_QUEUE_MINUTES)
-		FestivalPoint.Kind.VENDOR:
+		FestivalPoint.Kind.VENDOR, FestivalPoint.Kind.LATE_VENDOR:
 			return minf(3.0 + density * 9.0, MAX_QUEUE_MINUTES)
 	return 0.0
 
@@ -50,7 +50,7 @@ func advance(minutes: float, needs: Needs) -> String:
 	if facility.kind == FestivalPoint.Kind.TOILET:
 		needs.adjust(Needs.Kind.BLADDER, Needs.MAX)
 		return "Toilet visit complete — Bladder restored."
-	if facility.kind == FestivalPoint.Kind.VENDOR:
+	if facility.kind in [FestivalPoint.Kind.VENDOR, FestivalPoint.Kind.LATE_VENDOR]:
 		return "Vendor Queue complete."
 	return "Queue complete."
 

@@ -48,6 +48,7 @@ var tipsy := TipsyState.new()
 var mosh := MoshState.new()
 var mosh_genres := {}
 var friends: Array[FestivalFriend] = []
+var night := NightState.new()
 var poisoning_roll_count := 0
 var run_events: Array[RunEvent] = []
 var run_status := RunStatus.NOT_STARTED
@@ -88,6 +89,7 @@ func start_new_run(configuration: RunConfiguration = null, seed_value := -1) -> 
 		genre_graph)
 	grounds = FestivalGroundsGenerator.generate(lineup, run_seed, current_configuration)
 	friends = FriendGenerator.generate(current_configuration, lineup, grounds, genre_graph, run_seed)
+	night = NightState.new()
 	budget = STARTING_BUDGET
 	score_ledger = ScoreLedger.new()
 	facility_queue = FacilityQueue.new()
@@ -135,7 +137,7 @@ func score_percentage() -> float:
 	return 0.0 if maximum <= 0.0 else current_score() / maximum * 100.0
 
 func _on_time_advanced(minutes: float) -> void:
-	if needs != null:
+	if needs != null and not night.active:
 		var social_decay := 0.45 if current_configuration.friend_count == 0 else 1.0
 		needs.decay(minutes, social_decay)
 	var poisoning_events := food_poisoning.advance(minutes, needs)
@@ -374,6 +376,7 @@ func nearest_facility(world_position: Vector2, maximum_distance := 90.0) -> Fest
 	var closest: FestivalPoint = null
 	var closest_distance := maximum_distance
 	for kind in [FestivalPoint.Kind.WATER, FestivalPoint.Kind.TOILET, FestivalPoint.Kind.VENDOR,
+			FestivalPoint.Kind.LATE_VENDOR,
 			FestivalPoint.Kind.CAMP, FestivalPoint.Kind.FIRST_AID]:
 		for point in grounds.points_of_kind(kind):
 			var distance := world_position.distance_to(point.position)
@@ -384,10 +387,18 @@ func nearest_facility(world_position: Vector2, maximum_distance := 90.0) -> Fest
 
 func _on_night_started(day: int) -> void:
 	if day < FestivalTime.PLAYABLE_DAYS:
+		night.begin(day)
 		night_choices_requested.emit(day)
 		autosave_requested.emit("night_started")
 
 func _on_morning_started(day: int) -> void:
+	if night.active and not night.transition_applied:
+		var penalty := tipsy.consume_next_day_energy_penalty()
+		needs.adjust(Needs.Kind.ENERGY, -penalty)
+		run_events.append(RunEvent.new("night_summary", Clock.total_minutes,
+			"Partied %.0f min; slept %.0f min; overindulgence -%.0f Energy" % [
+				night.party_minutes, night.sleep_minutes, penalty]))
+		night.finish()
 	morning_recap_requested.emit(day - 1)
 	autosave_requested.emit("morning_started")
 
@@ -407,3 +418,51 @@ func _new_seed() -> int:
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
 	return rng.randi()
+
+func party_for_hour() -> bool:
+	if not night.active:
+		return false
+	var morning := FestivalTime.festival_day_start(night.day + 1)
+	var minutes := minf(60.0, morning - Clock.total_minutes)
+	if minutes <= 0.0:
+		return false
+	NightState.apply_party(minutes, needs, grounds.camp.profile)
+	night.party_minutes += minutes
+	run_events.append(RunEvent.new("night_party", Clock.total_minutes, "Partied for %.0f minutes" % minutes))
+	Clock.advance_game_minutes(minutes)
+	return true
+
+func sleep_until_morning() -> bool:
+	if not night.active:
+		return false
+	var morning := FestivalTime.festival_day_start(night.day + 1)
+	var minutes := morning - Clock.total_minutes
+	if minutes <= 0.0:
+		return false
+	NightState.apply_sleep(minutes, needs, grounds.camp.profile, tipsy.level)
+	night.sleep_minutes += minutes
+	Clock.advance_game_minutes(minutes)
+	return true
+
+func late_night_vendors() -> Array[Vendor]:
+	var result: Array[Vendor] = []
+	if not night.active or grounds == null or grounds.camp == null:
+		return result
+	for vendor in grounds.vendors:
+		if vendor.point.kind == FestivalPoint.Kind.LATE_VENDOR \
+				and vendor.point.position.distance_to(grounds.camp.position) <= 1700.0:
+			result.append(vendor)
+	return result
+
+func complete_late_vendor_purchase(vendor: Vendor, item: VendorItem) -> bool:
+	if not night.active or not late_night_vendors().has(vendor):
+		return false
+	if not start_vendor_purchase(vendor, item, vendor.point.position):
+		return false
+	var waiting := facility_queue.remaining_minutes
+	# Waiting at a late stall is still overnight time; use ordinary passive Need loss.
+	needs.decay(waiting)
+	Clock.advance_game_minutes(waiting)
+	run_events.append(RunEvent.new("late_food", Clock.total_minutes,
+		"Bought %s from %s" % [item.display_name, vendor.archetype.display_name]))
+	return true

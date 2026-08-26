@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="2"]
@@ -9,6 +9,7 @@
 [ext_resource type="PackedScene" path="res://scenes/festival_map.tscn" id="7"]
 [ext_resource type="PackedScene" path="res://scenes/vendor_menu.tscn" id="8"]
 [ext_resource type="PackedScene" path="res://scenes/group_chat.tscn" id="9"]
+[ext_resource type="PackedScene" path="res://scenes/night.tscn" id="10"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1")
@@ -49,7 +50,7 @@ layer = 9
 visible = false
 
 [node name="VendorLayer" type="CanvasLayer" parent="."]
-layer = 9
+layer = 12
 
 [node name="VendorMenu" parent="VendorLayer" instance=ExtResource("8")]
 visible = false
@@ -58,4 +59,10 @@ visible = false
 layer = 9
 
 [node name="GroupChat" parent="ChatLayer" instance=ExtResource("9")]
+visible = false
+
+[node name="NightLayer" type="CanvasLayer" parent="."]
+layer = 11
+
+[node name="Night" parent="NightLayer" instance=ExtResource("10")]
 visible = false

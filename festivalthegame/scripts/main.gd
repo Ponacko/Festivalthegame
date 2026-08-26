@@ -9,12 +9,14 @@ extends Node2D
 @onready var _player: Node2D = $Player
 @onready var _vendor_view: VendorView = $VendorLayer/VendorMenu
 @onready var _group_chat: GroupChatView = $ChatLayer/GroupChat
+@onready var _night_view: NightView = $NightLayer/Night
 var _stage_views: Array[StageView] = []
 var _friend_views: Array[FriendView] = []
 var _planner_was_paused := false
 var _map_was_paused := false
 var _vendor_was_paused := false
 var _chat_was_paused := false
+var _vendor_from_night := false
 
 func _ready() -> void:
 	_setup.configuration_submitted.connect(_on_configuration_submitted)
@@ -30,6 +32,10 @@ func _ready() -> void:
 	_vendor_view.purchase_requested.connect(_on_vendor_purchase_requested)
 	_group_chat.closed.connect(_on_chat_closed)
 	_group_chat.meet_requested.connect(_on_meet_requested)
+	_night_view.party_requested.connect(_on_night_party)
+	_night_view.sleep_requested.connect(_on_night_sleep)
+	_night_view.late_food_requested.connect(_open_vendor)
+	Game.night_choices_requested.connect(_open_night)
 	Game.player_relocation_requested.connect(_player.relocate_to)
 	_open_setup()
 	_spawn_stage_views()
@@ -85,6 +91,7 @@ func _open_setup() -> void:
 	_festival_map.hide()
 	_vendor_view.hide()
 	_group_chat.hide()
+	_night_view.hide()
 	_setup.reset()
 	_setup.show()
 
@@ -122,13 +129,25 @@ func _open_vendor(vendor: Vendor) -> void:
 			or Game.facility_queue.is_active():
 		return
 	_vendor_was_paused = Clock.paused
+	_vendor_from_night = _night_view.visible
+	if _vendor_from_night:
+		_night_view.hide()
 	Clock.paused = true
 	_vendor_view.show_vendor(vendor)
 
 func _on_vendor_closed() -> void:
 	Clock.paused = _vendor_was_paused
+	if _vendor_from_night and Game.night.active:
+		_night_view.show_night(Game.night, Game.grounds.camp, Game.late_night_vendors())
+	_vendor_from_night = false
 
 func _on_vendor_purchase_requested(vendor: Vendor, item: VendorItem) -> void:
+	if _vendor_from_night:
+		if Game.complete_late_vendor_purchase(vendor, item):
+			_vendor_view.set_status("Purchased %s. Night time passed while Queueing." % item.display_name)
+		else:
+			_vendor_view.set_status("Not enough Budget for that late-night purchase.")
+		return
 	if Game.start_vendor_purchase(vendor, item, _player.global_position):
 		_vendor_view.hide()
 		Clock.paused = _vendor_was_paused
@@ -155,14 +174,27 @@ func _on_meet_requested(friend: FestivalFriend, destination: FestivalPoint) -> v
 	var response := Game.request_friend_meet(friend, destination, position)
 	_group_chat.show_response(response.message)
 
+func _open_night(_day: int) -> void:
+	Clock.paused = true
+	_night_view.show_night(Game.night, Game.grounds.camp, Game.late_night_vendors())
+
+func _on_night_party() -> void:
+	Game.party_for_hour()
+	if Game.night.active:
+		_night_view.show_night(Game.night, Game.grounds.camp, Game.late_night_vendors())
+
+func _on_night_sleep() -> void:
+	if Game.sleep_until_morning():
+		_night_view.hide()
+
 func _toggle_pause() -> void:
 	if not _setup.visible and not _schedule.visible and not _festival_map.visible and not _vendor_view.visible \
-			and not _group_chat.visible:
+			and not _group_chat.visible and not _night_view.visible:
 		Clock.toggle_paused()
 
 func _cycle_speed() -> void:
 	if not _setup.visible and not _schedule.visible and not _festival_map.visible and not _vendor_view.visible \
-			and not _group_chat.visible:
+			and not _group_chat.visible and not _night_view.visible:
 		Clock.cycle_time_scale()
 
 func _unhandled_input(event: InputEvent) -> void:
