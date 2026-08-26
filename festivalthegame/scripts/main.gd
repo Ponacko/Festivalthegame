@@ -10,6 +10,7 @@ extends Node2D
 @onready var _vendor_view: VendorView = $VendorLayer/VendorMenu
 @onready var _group_chat: GroupChatView = $ChatLayer/GroupChat
 @onready var _night_view: NightView = $NightLayer/Night
+@onready var _recap_view: RecapView = $RecapLayer/Recap
 var _stage_views: Array[StageView] = []
 var _friend_views: Array[FriendView] = []
 var _planner_was_paused := false
@@ -36,6 +37,8 @@ func _ready() -> void:
 	_night_view.sleep_requested.connect(_on_night_sleep)
 	_night_view.late_food_requested.connect(_open_vendor)
 	Game.night_choices_requested.connect(_open_night)
+	Game.morning_recap_requested.connect(_open_recap)
+	_recap_view.dismissed.connect(_on_recap_dismissed)
 	Game.player_relocation_requested.connect(_player.relocate_to)
 	_open_setup()
 	_spawn_stage_views()
@@ -92,6 +95,7 @@ func _open_setup() -> void:
 	_vendor_view.hide()
 	_group_chat.hide()
 	_night_view.hide()
+	_recap_view.hide()
 	_setup.reset()
 	_setup.show()
 
@@ -187,14 +191,23 @@ func _on_night_sleep() -> void:
 	if Game.sleep_until_morning():
 		_night_view.hide()
 
+func _open_recap(_day: int) -> void:
+	Clock.paused = true
+	_night_view.hide()
+	_recap_view.show_recap(Game.pending_recap)
+
+func _on_recap_dismissed() -> void:
+	Game.dismiss_recap()
+	Clock.paused = false
+
 func _toggle_pause() -> void:
 	if not _setup.visible and not _schedule.visible and not _festival_map.visible and not _vendor_view.visible \
-			and not _group_chat.visible and not _night_view.visible:
+			and not _group_chat.visible and not _night_view.visible and not _recap_view.visible:
 		Clock.toggle_paused()
 
 func _cycle_speed() -> void:
 	if not _setup.visible and not _schedule.visible and not _festival_map.visible and not _vendor_view.visible \
-			and not _group_chat.visible and not _night_view.visible:
+			and not _group_chat.visible and not _night_view.visible and not _recap_view.visible:
 		Clock.cycle_time_scale()
 
 func _unhandled_input(event: InputEvent) -> void:

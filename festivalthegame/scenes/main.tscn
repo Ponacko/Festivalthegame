@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="2"]
@@ -10,6 +10,7 @@
 [ext_resource type="PackedScene" path="res://scenes/vendor_menu.tscn" id="8"]
 [ext_resource type="PackedScene" path="res://scenes/group_chat.tscn" id="9"]
 [ext_resource type="PackedScene" path="res://scenes/night.tscn" id="10"]
+[ext_resource type="PackedScene" path="res://scenes/recap.tscn" id="11"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1")
@@ -65,4 +66,10 @@ visible = false
 layer = 11
 
 [node name="Night" parent="NightLayer" instance=ExtResource("10")]
+visible = false
+
+[node name="RecapLayer" type="CanvasLayer" parent="."]
+layer = 13
+
+[node name="Recap" parent="RecapLayer" instance=ExtResource("11")]
 visible = false

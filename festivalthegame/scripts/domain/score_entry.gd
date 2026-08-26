@@ -9,6 +9,8 @@ var affinity_multiplier: float
 var zone_multiplier: float
 var needs_multiplier: float
 var points: float
+var recorded_at := -1.0
+var audience_zone := "—"
 
 func _init(
 		p_set: FestivalSet,

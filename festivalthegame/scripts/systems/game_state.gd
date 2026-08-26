@@ -49,6 +49,8 @@ var mosh := MoshState.new()
 var mosh_genres := {}
 var friends: Array[FestivalFriend] = []
 var night := NightState.new()
+var pending_recap: DayRecap
+var _day_start_budget := STARTING_BUDGET
 var poisoning_roll_count := 0
 var run_events: Array[RunEvent] = []
 var run_status := RunStatus.NOT_STARTED
@@ -90,6 +92,8 @@ func start_new_run(configuration: RunConfiguration = null, seed_value := -1) -> 
 	grounds = FestivalGroundsGenerator.generate(lineup, run_seed, current_configuration)
 	friends = FriendGenerator.generate(current_configuration, lineup, grounds, genre_graph, run_seed)
 	night = NightState.new()
+	pending_recap = null
+	_day_start_budget = STARTING_BUDGET
 	budget = STARTING_BUDGET
 	score_ledger = ScoreLedger.new()
 	facility_queue = FacilityQueue.new()
@@ -117,11 +121,16 @@ func record_attendance(
 		affinity_multiplier: float,
 		zone_multiplier: float,
 		needs_multiplier: float) -> ScoreEntry:
-	return score_ledger.record_attendance(
+	var entry := score_ledger.record_attendance(
 		festival_set, minutes, affinity_multiplier, zone_multiplier, needs_multiplier)
+	entry.recorded_at = Clock.total_minutes
+	entry.audience_zone = _zone_name_for_multiplier(zone_multiplier)
+	return entry
 
 func award_bonus(source_name: String, points: float) -> float:
 	var entry := score_ledger.record_bonus(source_name, points)
+	if entry != null:
+		entry.recorded_at = Clock.total_minutes
 	return entry.points if entry != null else 0.0
 
 func current_score() -> float:
@@ -157,6 +166,7 @@ func _on_time_advanced(minutes: float) -> void:
 				_roll_food_poisoning(_pending_vendor_item)
 				food_poisoning.enforce_mood(needs)
 				message = "%s purchased for €%.2f." % [_pending_vendor_item.display_name, price]
+				run_events.append(RunEvent.new("purchase", Clock.total_minutes, message))
 				_pending_vendor = null
 				_pending_vendor_item = null
 			facility_queue_finished.emit(message)
@@ -399,11 +409,16 @@ func _on_morning_started(day: int) -> void:
 			"Partied %.0f min; slept %.0f min; overindulgence -%.0f Energy" % [
 				night.party_minutes, night.sleep_minutes, penalty]))
 		night.finish()
-	morning_recap_requested.emit(day - 1)
+	var completed_day := day - 1
+	pending_recap = DayRecap.build(
+		completed_day, score_ledger, run_events, _day_start_budget - budget, needs)
+	_day_start_budget = budget
+	morning_recap_requested.emit(completed_day)
 	autosave_requested.emit("morning_started")
 
 func _on_run_completed() -> void:
 	run_status = RunStatus.COMPLETE
+	pending_recap = null
 	final_scoring_requested.emit()
 	autosave_requested.emit("run_completed")
 	run_completed.emit()
@@ -418,6 +433,15 @@ func _new_seed() -> int:
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
 	return rng.randi()
+
+func dismiss_recap() -> void:
+	pending_recap = null
+
+func _zone_name_for_multiplier(multiplier: float) -> String:
+	for zone in Audience.MULTIPLIER:
+		if is_equal_approx(Audience.MULTIPLIER[zone], multiplier):
+			return Audience.zone_name(zone)
+	return "Mixed"
 
 func party_for_hour() -> bool:
 	if not night.active:
