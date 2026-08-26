@@ -22,6 +22,7 @@ signal player_relocation_requested(world_position: Vector2)
 signal bladder_accident_occurred(message: String)
 signal clothes_changed(message: String)
 signal food_poisoning_status(message: String)
+signal mosh_status(message: String)
 
 enum RunStatus { NOT_STARTED, PLAYING, COMPLETE }
 
@@ -32,6 +33,7 @@ const COLLAPSE_NEEDS := [Needs.Kind.HUNGER, Needs.Kind.THIRST, Needs.Kind.ENERGY
 const ACCIDENT_MOOD := 10.0
 const ACCIDENT_SOCIAL_PENALTY := 30.0
 const CHANGE_CLOTHES_MINUTES := 20.0
+const INJURY_TREATMENT_MINUTES := 45.0
 
 var needs: Needs
 var lineup: Lineup
@@ -43,6 +45,8 @@ var score_ledger := ScoreLedger.new()
 var facility_queue := FacilityQueue.new()
 var food_poisoning := FoodPoisoning.new()
 var tipsy := TipsyState.new()
+var mosh := MoshState.new()
+var mosh_genres := {}
 var poisoning_roll_count := 0
 var run_events: Array[RunEvent] = []
 var run_status := RunStatus.NOT_STARTED
@@ -53,6 +57,8 @@ var _collapsing := false
 var _accident_penalty := false
 var _changing_clothes := false
 var _poison_rng := RandomNumberGenerator.new()
+var _mosh_rng := RandomNumberGenerator.new()
+var _treating_injury := false
 
 func _ready() -> void:
 	Clock.time_advanced.connect(_on_time_advanced)
@@ -73,25 +79,30 @@ func start_new_run(configuration: RunConfiguration = null, seed_value := -1) -> 
 	run_seed = seed_value if seed_value >= 0 else _new_seed()
 	current_configuration.lock()
 	needs = Needs.new()
+	var genre_graph := GenreGraph.load_bundled()
 	lineup = FestivalGenerator.generate(
 		current_configuration,
 		run_seed,
 		GenreCatalog.load_bundled(),
-		GenreGraph.load_bundled())
+		genre_graph)
 	grounds = FestivalGroundsGenerator.generate(lineup, run_seed, current_configuration)
 	budget = STARTING_BUDGET
 	score_ledger = ScoreLedger.new()
 	facility_queue = FacilityQueue.new()
 	food_poisoning = FoodPoisoning.new()
 	tipsy = TipsyState.new()
+	mosh = MoshState.new()
+	mosh_genres = MoshPit.build_eligible_genres(genre_graph)
 	poisoning_roll_count = 0
 	_poison_rng.seed = run_seed ^ 0x504f49534f4e
+	_mosh_rng.seed = run_seed ^ 0x4d4f5348504954
 	_pending_vendor = null
 	_pending_vendor_item = null
 	run_events.clear()
 	_collapsing = false
 	_accident_penalty = false
 	_changing_clothes = false
+	_treating_injury = false
 	_festival_maximum = TheoreticalMaximum.calculate(lineup)
 	run_status = RunStatus.PLAYING
 	Clock.reset()
@@ -226,7 +237,62 @@ func change_at_camp(player_position: Vector2) -> bool:
 	return true
 
 func is_action_locked() -> bool:
-	return _collapsing or _changing_clothes
+	return _collapsing or _changing_clothes or _treating_injury
+
+func available_mosh_set(player_position: Vector2) -> FestivalSet:
+	if lineup == null:
+		return null
+	for stage in lineup.stages:
+		var festival_set := lineup.active_set_for(stage, Clock.total_minutes)
+		if MoshPit.is_available(festival_set, player_position, Clock.total_minutes, mosh_genres):
+			return festival_set
+	return null
+
+func join_mosh(festival_set: FestivalSet, player_position: Vector2) -> bool:
+	if is_action_locked() or facility_queue.is_active() \
+			or not MoshPit.is_available(festival_set, player_position, Clock.total_minutes, mosh_genres):
+		return false
+	if not mosh.join(festival_set):
+		return false
+	run_events.append(RunEvent.new("mosh_joined", Clock.total_minutes, festival_set.artist.name))
+	mosh_status.emit("Joined the Mosh Pit for %s — leave whenever you want." % festival_set.artist.name)
+	return true
+
+func leave_mosh() -> bool:
+	if not mosh.is_active():
+		return false
+	var artist_name := mosh.active_set.artist.name
+	mosh.leave()
+	mosh_status.emit("Left the Mosh Pit for %s." % artist_name)
+	return true
+
+func advance_mosh(minutes: float, player_position: Vector2) -> void:
+	if not mosh.is_active():
+		return
+	if not MoshPit.is_available(mosh.active_set, player_position, Clock.total_minutes, mosh_genres):
+		leave_mosh()
+		return
+	var artist_name := mosh.active_set.artist.name
+	var result := mosh.advance(minutes, needs, _mosh_rng)
+	if result.bonus_points > 0.0:
+		award_bonus("Mosh Pit — %s" % artist_name, result.bonus_points)
+	if result.injured_now:
+		run_events.append(RunEvent.new("injury", Clock.total_minutes, "Injured while moshing to %s" % artist_name))
+		mosh_status.emit("Injured in the Mosh Pit — walking speed halved until First Aid.")
+
+func treat_injury(player_position: Vector2) -> bool:
+	if not mosh.injured or is_action_locked():
+		return false
+	var first_aid := grounds.points_of_kind(FestivalPoint.Kind.FIRST_AID)[0]
+	if player_position.distance_to(first_aid.position) > 90.0:
+		return false
+	_treating_injury = true
+	Clock.advance_game_minutes(INJURY_TREATMENT_MINUTES)
+	mosh.treat(needs)
+	_treating_injury = false
+	run_events.append(RunEvent.new("injury_treated", Clock.total_minutes, "Treated at First Aid"))
+	mosh_status.emit("Injury treated at First Aid — movement restored.")
+	return true
 
 func queue_preview(facility: FestivalPoint) -> float:
 	if facility == null:
@@ -273,7 +339,8 @@ func nearest_facility(world_position: Vector2, maximum_distance := 90.0) -> Fest
 		return null
 	var closest: FestivalPoint = null
 	var closest_distance := maximum_distance
-	for kind in [FestivalPoint.Kind.WATER, FestivalPoint.Kind.TOILET, FestivalPoint.Kind.VENDOR, FestivalPoint.Kind.CAMP]:
+	for kind in [FestivalPoint.Kind.WATER, FestivalPoint.Kind.TOILET, FestivalPoint.Kind.VENDOR,
+			FestivalPoint.Kind.CAMP, FestivalPoint.Kind.FIRST_AID]:
 		for point in grounds.points_of_kind(kind):
 			var distance := world_position.distance_to(point.position)
 			if distance <= closest_distance:

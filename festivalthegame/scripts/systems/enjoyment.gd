@@ -24,6 +24,8 @@ func _process(_delta: float) -> void:
 	_evaluate()  # keep the readout fresh even while paused
 
 func _on_time_advanced(minutes: float) -> void:
+	if _player != null:
+		Game.advance_mosh(minutes, _player.global_position)
 	_score_attendance(Clock.total_minutes - minutes, Clock.total_minutes)
 	_evaluate()
 

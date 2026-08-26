@@ -17,6 +17,8 @@ var _speed_button: Button
 var _facility_button: Button
 var _facility_status: Label
 var _nearby_facility: FestivalPoint
+var _mosh_button: Button
+var _available_mosh_set: FestivalSet
 
 func _ready() -> void:
 	var schedule_button := Button.new()
@@ -101,6 +103,22 @@ func _ready() -> void:
 	Game.bladder_accident_occurred.connect(func(message: String) -> void: _facility_status.text = message)
 	Game.clothes_changed.connect(func(message: String) -> void: _facility_status.text = message)
 	Game.food_poisoning_status.connect(func(message: String) -> void: _facility_status.text = message)
+	Game.mosh_status.connect(func(message: String) -> void: _facility_status.text = message)
+
+	_mosh_button = Button.new()
+	_mosh_button.name = "MoshButton"
+	_mosh_button.custom_minimum_size = Vector2(260, 56)
+	_mosh_button.anchor_left = 1.0
+	_mosh_button.anchor_top = 1.0
+	_mosh_button.anchor_right = 1.0
+	_mosh_button.anchor_bottom = 1.0
+	_mosh_button.offset_left = -272.0
+	_mosh_button.offset_top = -68.0
+	_mosh_button.offset_right = -12.0
+	_mosh_button.offset_bottom = -12.0
+	_mosh_button.visible = false
+	_mosh_button.pressed.connect(_on_mosh_pressed)
+	add_child(_mosh_button)
 
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 12)
@@ -135,6 +153,7 @@ func _process(_delta: float) -> void:
 	_pause_button.text = "Resume" if Clock.paused else "Pause"
 	_speed_button.text = "Speed  x%.0f" % Clock.time_scale
 	_update_facility_action()
+	_update_mosh_action()
 	if Game.needs == null:
 		return
 	_info.text = "Day %d  %s   %s  x%.2f   Score %.0f   €%.0f   Mult x%.2f\n[tap: move]  [space: pause]  [ [ / ] : speed ]  [R: new run]" % [
@@ -149,6 +168,8 @@ func _process(_delta: float) -> void:
 	if Game.tipsy.is_active():
 		_info.text += "\nTipsy %.0f%%  •  %.0f min remaining" % [
 			Game.tipsy.level * 100.0, Game.tipsy.remaining_minutes]
+	if Game.mosh.injured:
+		_info.text += "\nINJURED  •  movement x0.5  •  seek First Aid"
 	for k in Needs.ALL:
 		_bars[k].value = Game.needs.get_value(k)
 
@@ -172,9 +193,14 @@ func _update_facility_action() -> void:
 	if _nearby_facility != null and _nearby_facility.kind == FestivalPoint.Kind.CAMP \
 			and not Game.has_accident_penalty():
 		_nearby_facility = null
+	if _nearby_facility != null and _nearby_facility.kind == FestivalPoint.Kind.FIRST_AID \
+			and not Game.mosh.injured:
+		_nearby_facility = null
 	_facility_button.visible = _nearby_facility != null
 	if _nearby_facility != null:
-		if _nearby_facility.kind == FestivalPoint.Kind.CAMP:
+		if _nearby_facility.kind == FestivalPoint.Kind.FIRST_AID:
+			_facility_button.text = "Treat Injury at First Aid  •  %.0f min" % Game.INJURY_TREATMENT_MINUTES
+		elif _nearby_facility.kind == FestivalPoint.Kind.CAMP:
 			_facility_button.text = "Change clothes at Camp  •  %.0f min" % Game.CHANGE_CLOTHES_MINUTES
 		elif _nearby_facility.kind == FestivalPoint.Kind.VENDOR:
 			_facility_button.text = "Shop at %s" % _nearby_facility.display_name
@@ -188,9 +214,30 @@ func _on_facility_pressed() -> void:
 		return
 	var player := get_tree().get_first_node_in_group("player") as Node2D
 	if _nearby_facility != null and player != null:
-		if _nearby_facility.kind == FestivalPoint.Kind.CAMP:
+		if _nearby_facility.kind == FestivalPoint.Kind.FIRST_AID:
+			Game.treat_injury(player.global_position)
+		elif _nearby_facility.kind == FestivalPoint.Kind.CAMP:
 			Game.change_at_camp(player.global_position)
 		elif _nearby_facility.kind == FestivalPoint.Kind.VENDOR:
 			vendor_requested.emit(Game.grounds.vendor_for_point(_nearby_facility))
 		else:
 			Game.start_facility_queue(_nearby_facility, player.global_position)
+
+func _update_mosh_action() -> void:
+	if Game.mosh.is_active():
+		_mosh_button.visible = true
+		_mosh_button.text = "Leave Mosh Pit"
+		return
+	var player := get_tree().get_first_node_in_group("player") as Node2D
+	_available_mosh_set = Game.available_mosh_set(player.global_position) if player != null else null
+	_mosh_button.visible = _available_mosh_set != null and not Game.mosh.injured
+	if _available_mosh_set != null:
+		_mosh_button.text = "Join Mosh Pit  •  %s" % _available_mosh_set.artist.name
+
+func _on_mosh_pressed() -> void:
+	if Game.mosh.is_active():
+		Game.leave_mosh()
+		return
+	var player := get_tree().get_first_node_in_group("player") as Node2D
+	if player != null and _available_mosh_set != null:
+		Game.join_mosh(_available_mosh_set, player.global_position)

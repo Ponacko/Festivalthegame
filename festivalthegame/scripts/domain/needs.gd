@@ -39,6 +39,7 @@ const MULT_MAX := 1.25
 
 var _values := {}
 var social_penalty := 0.0
+var mood_penalty := 0.0
 
 func _init() -> void:
 	for k in ALL:
@@ -47,6 +48,8 @@ func _init() -> void:
 func get_value(kind: int) -> float:
 	if kind == Kind.SOCIAL:
 		return maxf(0.0, _values[kind] - social_penalty)
+	if kind == Kind.MOOD:
+		return maxf(0.0, _values[kind] - mood_penalty)
 	return _values[kind]
 
 func fraction(kind: int) -> float:
@@ -64,6 +67,9 @@ func is_empty(kind: int) -> bool:
 
 func set_social_penalty(value: float) -> void:
 	social_penalty = clampf(value, 0.0, MAX)
+
+func set_mood_penalty(value: float) -> void:
+	mood_penalty = clampf(value, 0.0, MAX)
 
 ## Multiplier applied to Enjoyment earned per minute. Uses mean satisfaction
 ## across all needs, but any single fully-empty need floors it to MULT_MIN —

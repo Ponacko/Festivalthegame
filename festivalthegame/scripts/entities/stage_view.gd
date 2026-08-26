@@ -32,6 +32,8 @@ func _draw() -> void:
 		draw_circle(Vector2.ZERO, Audience.BACK_RADIUS, Color(1, 1, 1, 0.025 + popularity * 0.035))
 		draw_circle(Vector2.ZERO, Audience.MID_RADIUS, Color(1, 1, 1, 0.035 + popularity * 0.055))
 		draw_circle(Vector2.ZERO, Audience.FRONT_RADIUS, Color(1, 1, 1, 0.05 + popularity * 0.09))
+		if MoshPit.is_available(active_set, _stage.position, Clock.total_minutes, Game.mosh_genres):
+			draw_circle(Vector2.ZERO, Audience.FRONT_RADIUS * 0.55, Color(0.95, 0.25, 0.35, 0.28))
 	else:
 		draw_arc(Vector2.ZERO, Audience.BACK_RADIUS, 0.0, TAU, 64, Color(1, 1, 1, 0.12), 2.0)
 	draw_rect(Rect2(-60, -40, 120, 80), Color(0.5, 0.3, 0.6, 1))

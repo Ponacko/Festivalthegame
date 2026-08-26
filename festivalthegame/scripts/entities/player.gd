@@ -44,7 +44,7 @@ func _physics_process(_delta: float) -> void:
 		return
 	var crowd_speed := CrowdField.speed_multiplier(Game.lineup, global_position, Clock.total_minutes)
 	var direction := Game.tipsy.movement_direction(to_target, Clock.total_minutes)
-	velocity = direction * SPEED * Clock.time_scale * crowd_speed
+	velocity = direction * SPEED * Clock.time_scale * crowd_speed * Game.mosh.speed_multiplier()
 	var before := global_position
 	move_and_slide()
 	var walked := global_position.distance_to(before)
