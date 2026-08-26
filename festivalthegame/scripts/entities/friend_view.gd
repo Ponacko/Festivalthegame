@@ -38,4 +38,7 @@ func _physics_process(delta: float) -> void:
 		_route.pop_front()
 
 func _draw() -> void:
-	draw_circle(Vector2.ZERO, 10.0, Color("f3b5d2"))
+	draw_set_transform(Vector2(0, 17), 0.0, Vector2(1.0, 0.35))
+	draw_circle(Vector2.ZERO, 12.0, Color(0, 0, 0, 0.25))
+	draw_set_transform(Vector2.ZERO)
+	PixelArt.person(self, PixelArt.FRIENDS[friend.index % PixelArt.FRIENDS.size()])

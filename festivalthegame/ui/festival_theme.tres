@@ -1,0 +1,53 @@
+[gd_resource type="Theme" load_steps=5 format=3]
+
+[sub_resource type="StyleBoxFlat" id="Panel"]
+bg_color = Color(0.055, 0.075, 0.13, 0.94)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.18, 0.75, 0.86, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="Button"]
+bg_color = Color(0.15, 0.22, 0.38, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.32, 0.86, 0.92, 1)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+
+[sub_resource type="StyleBoxFlat" id="ButtonHover"]
+bg_color = Color(0.22, 0.38, 0.55, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.82, 0.32, 1)
+
+[sub_resource type="StyleBoxFlat" id="Progress"]
+bg_color = Color(0.1, 0.14, 0.24, 0.95)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.32, 0.5, 0.65, 1)
+
+[resource]
+default_font_size = 17
+Label/colors/font_color = Color(0.94, 0.97, 1, 1)
+PanelContainer/styles/panel = SubResource("Panel")
+Panel/styles/panel = SubResource("Panel")
+Button/colors/font_color = Color(0.96, 0.98, 1, 1)
+Button/font_sizes/font_size = 18
+Button/styles/normal = SubResource("Button")
+Button/styles/hover = SubResource("ButtonHover")
+Button/styles/pressed = SubResource("ButtonHover")
+ProgressBar/styles/background = SubResource("Progress")

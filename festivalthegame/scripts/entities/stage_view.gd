@@ -36,4 +36,17 @@ func _draw() -> void:
 			draw_circle(Vector2.ZERO, Audience.FRONT_RADIUS * 0.55, Color(0.95, 0.25, 0.35, 0.28))
 	else:
 		draw_arc(Vector2.ZERO, Audience.BACK_RADIUS, 0.0, TAU, 64, Color(1, 1, 1, 0.12), 2.0)
-	draw_rect(Rect2(-60, -40, 120, 80), Color(0.5, 0.3, 0.6, 1))
+	# Pixel PA towers, deck, lights, and deterministic popularity-sized crowd.
+	draw_rect(Rect2(-64, -42, 128, 84), PixelArt.INK)
+	draw_rect(Rect2(-56, -34, 112, 66), Color("774fa3"))
+	draw_rect(Rect2(-48, 24, 96, 8), Color("f6c85f"))
+	for x in [-48, -16, 16, 48]:
+		draw_rect(Rect2(x - 4, -28, 8, 8), Color("77e6ff" if active_set != null else "65708c"))
+	if active_set != null:
+		var crowd_count := 8 + int(active_set.artist.popularity * 24.0)
+		for index in range(crowd_count):
+			var column := index % 8
+			var row := index / 8
+			var crowd_position := Vector2(-70 + column * 20, 68 + row * 21)
+			draw_rect(Rect2(crowd_position - Vector2(4, 4), Vector2(8, 8)),
+				PixelArt.FRIENDS[index % PixelArt.FRIENDS.size()])

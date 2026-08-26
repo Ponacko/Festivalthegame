@@ -20,8 +20,14 @@ var _facility_status: Label
 var _nearby_facility: FestivalPoint
 var _mosh_button: Button
 var _available_mosh_set: FestivalSet
+var _status_card: Panel
 
 func _ready() -> void:
+	_status_card = Panel.new()
+	_status_card.name = "StatusCard"
+	_status_card.position = Vector2(8, 8)
+	_status_card.custom_minimum_size = Vector2(350, 246)
+	add_child(_status_card)
 	var schedule_button := Button.new()
 	schedule_button.name = "ScheduleButton"
 	schedule_button.text = "Schedule"
@@ -135,6 +141,7 @@ func _ready() -> void:
 	add_child(_mosh_button)
 
 	var margin := MarginContainer.new()
+	margin.name = "SafeStatus"
 	margin.add_theme_constant_override("margin_left", 12)
 	margin.add_theme_constant_override("margin_top", 12)
 	add_child(margin)
@@ -184,6 +191,14 @@ func _process(_delta: float) -> void:
 			Game.tipsy.level * 100.0, Game.tipsy.remaining_minutes]
 	if Game.mosh.injured:
 		_info.text += "\nINJURED  •  movement x0.5  •  seek First Aid"
+	var player := get_tree().get_first_node_in_group("player") as Node2D
+	if player != null:
+		var nearby_friends := 0
+		for node in get_tree().get_nodes_in_group("friends"):
+			if (node as Node2D).global_position.distance_to(player.global_position) <= 150.0:
+				nearby_friends += 1
+		if nearby_friends > 0:
+			_info.text += "\nFRIENDS NEARBY  •  %d  •  Social + Mood" % nearby_friends
 	for k in Needs.ALL:
 		_bars[k].value = Game.needs.get_value(k)
 

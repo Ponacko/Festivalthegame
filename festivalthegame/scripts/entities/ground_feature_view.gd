@@ -18,7 +18,9 @@ func _ready() -> void:
 	queue_redraw()
 
 func _draw() -> void:
-	draw_circle(Vector2.ZERO, 12.0, _color_for(point.kind))
+	draw_circle(Vector2.ZERO, 38.0, Color(_color_for(point.kind), 0.10))
+	draw_arc(Vector2.ZERO, 38.0, 0.0, TAU, 24, Color(_color_for(point.kind), 0.45), 2.0)
+	PixelArt.facility(self, point.kind, _color_for(point.kind))
 
 func _color_for(kind: FestivalPoint.Kind) -> Color:
 	match kind:

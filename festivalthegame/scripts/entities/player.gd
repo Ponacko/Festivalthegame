@@ -13,6 +13,7 @@ var _route: Array[Vector2] = []
 func _ready() -> void:
 	_target = global_position
 	add_to_group("player")
+	queue_redraw()
 
 func _unhandled_input(event: InputEvent) -> void:
 	# Touch is delivered as a mouse event via emulate_mouse_from_touch.
@@ -55,3 +56,22 @@ func relocate_to(world_position: Vector2) -> void:
 	_moving = false
 	velocity = Vector2.ZERO
 	global_position = world_position
+
+func _process(_delta: float) -> void:
+	queue_redraw()
+
+func _draw() -> void:
+	draw_ellipse_shadow()
+	var effect := Color.TRANSPARENT
+	if Game.mosh != null and Game.mosh.injured:
+		effect = Color("ff4e5b")
+	elif Game.food_poisoning != null and Game.food_poisoning.is_active():
+		effect = Color("78d64b")
+	elif Game.tipsy != null and Game.tipsy.is_active():
+		effect = Color("ffd166")
+	PixelArt.person(self, PixelArt.PLAYER, effect)
+
+func draw_ellipse_shadow() -> void:
+	draw_set_transform(Vector2(0, 17), 0.0, Vector2(1.0, 0.35))
+	draw_circle(Vector2.ZERO, 12.0, Color(0, 0, 0, 0.28))
+	draw_set_transform(Vector2.ZERO)
