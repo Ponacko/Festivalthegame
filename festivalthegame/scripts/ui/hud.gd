@@ -183,6 +183,26 @@ func _ready() -> void:
 		row.add_child(bar)
 		vbox.add_child(row)
 		_bars[k] = bar
+	_apply_safe_area()
+
+func _apply_safe_area() -> void:
+	var safe := DisplayServer.get_display_safe_area()
+	var viewport_size := get_viewport().get_visible_rect().size
+	if safe.size.x <= 0 or safe.size.y <= 0 or viewport_size.x <= 0:
+		return
+	var scale := viewport_size.x / DisplayServer.screen_get_size().x
+	var left := maxf(0.0, safe.position.x * scale)
+	var top := maxf(0.0, safe.position.y * scale)
+	var right := maxf(0.0, viewport_size.x - safe.end.x * scale)
+	_status_card.position = Vector2(8.0 + left, 8.0 + top)
+	$SafeStatus.add_theme_constant_override("margin_left", int(12.0 + left))
+	$SafeStatus.add_theme_constant_override("margin_top", int(12.0 + top))
+	for button_name in ["ScheduleButton", "PauseButton", "SpeedButton", "MapButton", "ChatButton", "SoundButton"]:
+		var button := get_node(button_name) as Button
+		button.offset_left -= right
+		button.offset_right -= right
+		button.offset_top += top
+		button.offset_bottom += top
 
 func _process(_delta: float) -> void:
 	_pause_button.text = "Resume" if Clock.paused else "Pause"

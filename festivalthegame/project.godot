@@ -11,8 +11,10 @@ config_version=5
 [application]
 
 config/name="Festival: The Game"
+config/unique_name="com.festivalthegame.game"
 config/features=PackedStringArray("4.6", "Mobile")
 config/icon="res://icon.svg"
+config/version="1.0.0"
 run/main_scene="res://scenes/main.tscn"
 
 [autoload]
@@ -26,6 +28,7 @@ window/size/viewport_width=1280
 window/size/viewport_height=720
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
+window/handheld/orientation=0
 
 [gui]
 
@@ -37,4 +40,6 @@ pointing/emulate_mouse_from_touch=true
 
 [rendering]
 
-renderer/rendering_method="mobile"
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/vram_compression/import_etc2_astc=true

@@ -57,6 +57,14 @@ func relocate_to(world_position: Vector2) -> void:
 	velocity = Vector2.ZERO
 	global_position = world_position
 
+func configure_camera(bounds: Rect2) -> void:
+	var camera := $Cam as Camera2D
+	camera.limit_left = int(bounds.position.x)
+	camera.limit_top = int(bounds.position.y)
+	camera.limit_right = int(bounds.end.x)
+	camera.limit_bottom = int(bounds.end.y)
+	camera.limit_smoothed = true
+
 func _process(_delta: float) -> void:
 	queue_redraw()
 

@@ -76,6 +76,7 @@ func _spawn_ground_features() -> void:
 		child.queue_free()
 	if Game.grounds == null:
 		return
+	_player.configure_camera(Game.grounds.bounds)
 	for point in Game.grounds.points:
 		if point.kind == FestivalPoint.Kind.STAGE:
 			continue
