@@ -9,6 +9,7 @@ extends Node2D
 @onready var _player: Node2D = $Player
 @onready var _vendor_view: VendorView = $VendorLayer/VendorMenu
 var _stage_views: Array[StageView] = []
+var _friend_views: Array[FriendView] = []
 var _planner_was_paused := false
 var _map_was_paused := false
 var _vendor_was_paused := false
@@ -28,6 +29,7 @@ func _ready() -> void:
 	_open_setup()
 	_spawn_stage_views()
 	_spawn_ground_features()
+	_spawn_friend_views()
 
 func _spawn_stage_views() -> void:
 	for view in _stage_views:
@@ -62,6 +64,16 @@ func _spawn_ground_features() -> void:
 		body.add_child(collision)
 		$GroundFeatures.add_child(body)
 
+func _spawn_friend_views() -> void:
+	for view in _friend_views:
+		view.queue_free()
+	_friend_views.clear()
+	for friend in Game.friends:
+		var view := FriendView.new()
+		view.setup(friend, Game.grounds)
+		$FriendViews.add_child(view)
+		_friend_views.append(view)
+
 func _open_setup() -> void:
 	Clock.paused = true
 	_schedule.hide()
@@ -74,6 +86,7 @@ func _on_configuration_submitted(configuration: RunConfiguration) -> void:
 	Game.start_new_run(configuration)
 	_spawn_stage_views()
 	_spawn_ground_features()
+	_spawn_friend_views()
 	_setup.hide()
 	Clock.paused = false
 

@@ -28,6 +28,28 @@ func _on_time_advanced(minutes: float) -> void:
 		Game.advance_mosh(minutes, _player.global_position)
 	_score_attendance(Clock.total_minutes - minutes, Clock.total_minutes)
 	_evaluate()
+	_apply_company(minutes)
+
+func _apply_company(minutes: float) -> void:
+	if _player == null or Game.needs == null:
+		return
+	if Game.friends.is_empty():
+		if current_stage != null:
+			Game.apply_solo_crowd_atmosphere(minutes)
+		return
+	var player_set: FestivalSet = null
+	if current_stage != null:
+		player_set = Game.lineup.active_set_for(current_stage, Clock.total_minutes)
+	var nearby := 0
+	var shared := 0
+	for node in get_tree().get_nodes_in_group("friends"):
+		var friend_view := node as FriendView
+		if friend_view == null or friend_view.global_position.distance_to(_player.global_position) > 150.0:
+			continue
+		nearby += 1
+		if player_set != null and friend_view.friend.current_set(Clock.total_minutes) == player_set:
+			shared += 1
+	Game.apply_friend_presence(minutes, nearby, shared, player_set)
 
 func _score_attendance(interval_start: float, interval_end: float) -> void:
 	if Game.is_action_locked() or _player == null or Game.lineup == null or Game.needs == null:

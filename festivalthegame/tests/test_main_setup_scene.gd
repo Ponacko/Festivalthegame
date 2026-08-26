@@ -26,6 +26,8 @@ func _ready() -> void:
 		"submitting setup generates the complete Festival")
 	check(Game.grounds.camp != null and Game.grounds.camp.friend_count == 2,
 		"the selected campsite becomes the whole group's home base")
+	check(main.get_tree().get_nodes_in_group("friends").size() == 2,
+		"playable world spawns exactly the configured autonomous Friends")
 	check(not Clock.paused, "Festival time starts after setup")
 	var facility_button := main.get_node_or_null("Hud/FacilityButton") as Button
 	var facility_status := main.get_node_or_null("Hud/FacilityStatus") as Label

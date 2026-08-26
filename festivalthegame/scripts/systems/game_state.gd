@@ -47,6 +47,7 @@ var food_poisoning := FoodPoisoning.new()
 var tipsy := TipsyState.new()
 var mosh := MoshState.new()
 var mosh_genres := {}
+var friends: Array[FestivalFriend] = []
 var poisoning_roll_count := 0
 var run_events: Array[RunEvent] = []
 var run_status := RunStatus.NOT_STARTED
@@ -86,6 +87,7 @@ func start_new_run(configuration: RunConfiguration = null, seed_value := -1) -> 
 		GenreCatalog.load_bundled(),
 		genre_graph)
 	grounds = FestivalGroundsGenerator.generate(lineup, run_seed, current_configuration)
+	friends = FriendGenerator.generate(current_configuration, lineup, grounds, genre_graph, run_seed)
 	budget = STARTING_BUDGET
 	score_ledger = ScoreLedger.new()
 	facility_queue = FacilityQueue.new()
@@ -134,7 +136,8 @@ func score_percentage() -> float:
 
 func _on_time_advanced(minutes: float) -> void:
 	if needs != null:
-		needs.decay(minutes)
+		var social_decay := 0.45 if current_configuration.friend_count == 0 else 1.0
+		needs.decay(minutes, social_decay)
 	var poisoning_events := food_poisoning.advance(minutes, needs)
 	for event in poisoning_events:
 		_record_poisoning_event(event)
@@ -238,6 +241,25 @@ func change_at_camp(player_position: Vector2) -> bool:
 
 func is_action_locked() -> bool:
 	return _collapsing or _changing_clothes or _treating_injury
+
+func apply_friend_presence(
+		minutes: float,
+		nearby_count: int,
+		shared_set_count: int,
+		festival_set: FestivalSet) -> void:
+	if minutes <= 0.0 or nearby_count <= 0:
+		return
+	var gain_multiplier := tipsy.gain_multiplier()
+	needs.adjust(Needs.Kind.SOCIAL, 0.18 * nearby_count * minutes * gain_multiplier)
+	needs.adjust(Needs.Kind.MOOD, 0.08 * nearby_count * minutes * gain_multiplier)
+	if shared_set_count > 0 and festival_set != null:
+		award_bonus(
+			"Shared experience — %s" % festival_set.artist.name,
+			0.12 * shared_set_count * minutes)
+
+func apply_solo_crowd_atmosphere(minutes: float) -> void:
+	if current_configuration.friend_count == 0 and minutes > 0.0:
+		needs.adjust(Needs.Kind.SOCIAL, 0.10 * minutes * tipsy.gain_multiplier())
 
 func available_mosh_set(player_position: Vector2) -> FestivalSet:
 	if lineup == null:

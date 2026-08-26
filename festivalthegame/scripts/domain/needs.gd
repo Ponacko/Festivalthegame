@@ -58,9 +58,10 @@ func fraction(kind: int) -> float:
 func adjust(kind: int, delta: float) -> void:
 	_values[kind] = clampf(_values[kind] + delta, 0.0, MAX)
 
-func decay(game_minutes: float) -> void:
+func decay(game_minutes: float, social_decay_multiplier := 1.0) -> void:
 	for k in ALL:
-		adjust(k, -PASSIVE_DECAY[k] * game_minutes)
+		var multiplier := social_decay_multiplier if k == Kind.SOCIAL else 1.0
+		adjust(k, -PASSIVE_DECAY[k] * game_minutes * multiplier)
 
 func is_empty(kind: int) -> bool:
 	return get_value(kind) <= 0.0

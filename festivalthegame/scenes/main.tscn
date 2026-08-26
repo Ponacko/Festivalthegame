@@ -18,6 +18,8 @@ polygon = PackedVector2Array(-1500, -1000, 1500, -1000, 1500, 1000, -1500, 1000)
 
 [node name="GroundFeatures" type="Node2D" parent="."]
 
+[node name="FriendViews" type="Node2D" parent="."]
+
 [node name="Player" parent="." instance=ExtResource("2")]
 position = Vector2(0, 0)
 
