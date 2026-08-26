@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=15 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="2"]
@@ -12,6 +12,8 @@
 [ext_resource type="PackedScene" path="res://scenes/night.tscn" id="10"]
 [ext_resource type="PackedScene" path="res://scenes/recap.tscn" id="11"]
 [ext_resource type="PackedScene" path="res://scenes/scoreboard.tscn" id="12"]
+[ext_resource type="Script" path="res://scripts/systems/soundscape.gd" id="13"]
+[ext_resource type="PackedScene" path="res://scenes/audio_settings.tscn" id="14"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1")
@@ -30,6 +32,9 @@ position = Vector2(0, 0)
 [node name="Enjoyment" type="Node" parent="."]
 script = ExtResource("4")
 player_path = NodePath("../Player")
+
+[node name="Soundscape" type="Node2D" parent="."]
+script = ExtResource("13")
 
 [node name="Hud" type="CanvasLayer" parent="."]
 script = ExtResource("3")
@@ -79,4 +84,10 @@ visible = false
 layer = 14
 
 [node name="Scoreboard" parent="ScoreboardLayer" instance=ExtResource("12")]
+visible = false
+
+[node name="AudioLayer" type="CanvasLayer" parent="."]
+layer = 15
+
+[node name="AudioSettings" parent="AudioLayer" instance=ExtResource("14")]
 visible = false

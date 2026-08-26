@@ -7,6 +7,7 @@ signal pause_requested
 signal speed_requested
 signal map_requested
 signal chat_requested
+signal audio_settings_requested
 signal vendor_requested(vendor: Vendor)
 
 var _info: Label
@@ -90,6 +91,19 @@ func _ready() -> void:
 	chat_button.offset_bottom = 320.0
 	chat_button.pressed.connect(func() -> void: chat_requested.emit())
 	add_child(chat_button)
+
+	var sound_button := Button.new()
+	sound_button.name = "SoundButton"
+	sound_button.text = "Sound"
+	sound_button.custom_minimum_size = Vector2(160, 52)
+	sound_button.anchor_left = 1.0
+	sound_button.anchor_right = 1.0
+	sound_button.offset_left = -172.0
+	sound_button.offset_top = 332.0
+	sound_button.offset_right = -12.0
+	sound_button.offset_bottom = 384.0
+	sound_button.pressed.connect(func() -> void: audio_settings_requested.emit())
+	add_child(sound_button)
 
 	_facility_button = Button.new()
 	_facility_button.name = "FacilityButton"

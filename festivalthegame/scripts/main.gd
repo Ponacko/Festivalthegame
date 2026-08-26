@@ -12,6 +12,8 @@ extends Node2D
 @onready var _night_view: NightView = $NightLayer/Night
 @onready var _recap_view: RecapView = $RecapLayer/Recap
 @onready var _scoreboard: ScoreboardView = $ScoreboardLayer/Scoreboard
+@onready var _soundscape: FestivalSoundscape = $Soundscape
+@onready var _audio_settings: AudioSettingsView = $AudioLayer/AudioSettings
 var _stage_views: Array[StageView] = []
 var _friend_views: Array[FriendView] = []
 var _planner_was_paused := false
@@ -20,6 +22,7 @@ var _vendor_was_paused := false
 var _chat_was_paused := false
 var _vendor_from_night := false
 var _ironman_save := IronmanSave.new()
+var _audio_was_paused := false
 
 func _ready() -> void:
 	_setup.configuration_submitted.connect(_on_configuration_submitted)
@@ -30,6 +33,7 @@ func _ready() -> void:
 	_hud.map_requested.connect(_open_map)
 	_hud.vendor_requested.connect(_open_vendor)
 	_hud.chat_requested.connect(_open_chat)
+	_hud.audio_settings_requested.connect(_open_audio_settings)
 	_schedule.closed.connect(_on_schedule_closed)
 	_festival_map.closed.connect(_on_map_closed)
 	_vendor_view.closed.connect(_on_vendor_closed)
@@ -47,11 +51,13 @@ func _ready() -> void:
 	Clock.minute_ticked.connect(func(_minute: int) -> void: _write_autosave())
 	Game.run_completed.connect(func() -> void: _ironman_save.clear())
 	_scoreboard.new_run_requested.connect(_open_setup)
+	_audio_settings.closed.connect(_on_audio_settings_closed)
 	Game.player_relocation_requested.connect(_player.relocate_to)
 	_open_setup()
 	_spawn_stage_views()
 	_spawn_ground_features()
 	_spawn_friend_views()
+	_soundscape.build_for_lineup()
 
 func _spawn_stage_views() -> void:
 	for view in _stage_views:
@@ -105,6 +111,7 @@ func _open_setup() -> void:
 	_night_view.hide()
 	_recap_view.hide()
 	_scoreboard.hide()
+	_audio_settings.hide()
 	_setup.reset()
 	_setup.set_active_save_available(_ironman_save.has_active_run())
 	_setup.show()
@@ -114,6 +121,7 @@ func _on_configuration_submitted(configuration: RunConfiguration) -> void:
 	_spawn_stage_views()
 	_spawn_ground_features()
 	_spawn_friend_views()
+	_soundscape.build_for_lineup()
 	_setup.hide()
 	Clock.paused = false
 	_write_autosave()
@@ -130,6 +138,7 @@ func _resume_active_run() -> void:
 	_spawn_stage_views()
 	_spawn_ground_features()
 	_spawn_friend_views()
+	_soundscape.build_for_lineup()
 	_player.relocate_to(restored["player_position"])
 	_setup.hide()
 	if Game.night.active:
@@ -142,6 +151,16 @@ func _resume_active_run() -> void:
 func _write_autosave() -> void:
 	if Game.run_status == Game.RunStatus.PLAYING and Game.needs != null:
 		_ironman_save.save(Game.snapshot(_player.global_position))
+
+func _open_audio_settings() -> void:
+	if _setup.visible or _audio_settings.visible:
+		return
+	_audio_was_paused = Clock.paused
+	Clock.paused = true
+	_audio_settings.show_settings(_soundscape.settings)
+
+func _on_audio_settings_closed() -> void:
+	Clock.paused = _audio_was_paused
 
 func _open_schedule() -> void:
 	if Game.lineup == null or _setup.visible or _vendor_view.visible or Game.facility_queue.is_active():
