@@ -55,3 +55,17 @@ func validation_errors() -> PackedStringArray:
 
 func is_valid() -> bool:
 	return validation_errors().is_empty()
+
+func to_dictionary() -> Dictionary:
+	var saved_favorites: Array[Dictionary] = []
+	for favorite in favorites:
+		saved_favorites.append({"artist_name": favorite.artist_name, "genre_id": favorite.genre_id})
+	return {"favorites": saved_favorites, "friend_count": friend_count, "campsite_id": campsite_id}
+
+static func from_dictionary(value: Dictionary) -> RunConfiguration:
+	var configuration := RunConfiguration.new()
+	for favorite in value.get("favorites", []):
+		configuration.add_favorite(str(favorite.get("artist_name", "")), str(favorite.get("genre_id", "")))
+	configuration.set_friend_count(int(value.get("friend_count", 0)))
+	configuration.select_campsite(str(value.get("campsite_id", "")))
+	return configuration

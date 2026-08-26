@@ -3,6 +3,7 @@ extends Control
 ## Touch-first entry point for one Run's taste and group configuration.
 
 signal configuration_submitted(configuration: RunConfiguration)
+signal resume_requested
 
 @onready var _artist_name: LineEdit = $Panel/Margin/Content/Entry/ArtistName
 @onready var _genre_search: LineEdit = $Panel/Margin/Content/Entry/GenreSearch
@@ -18,6 +19,7 @@ var _favorites: Array[FavoriteArtistPreference] = []
 var _visible_genres: Array[GenreEntry] = []
 var _selected_genre: GenreEntry
 var _selected_campsite_id := ""
+var _active_save_available := false
 
 func _ready() -> void:
 	_catalog = GenreCatalog.load_bundled()
@@ -25,6 +27,7 @@ func _ready() -> void:
 	_suggestions.item_selected.connect(_on_genre_selected)
 	_suggestions.item_activated.connect(_on_genre_selected)
 	$Panel/Margin/Content/Entry/AddFavorite.pressed.connect(_on_add_favorite)
+	$Panel/Margin/Content/ResumeButton.pressed.connect(func() -> void: resume_requested.emit())
 	$Panel/Margin/Content/RemoveFavorite.pressed.connect(_on_remove_favorite)
 	$Panel/Margin/Content/StartButton.pressed.connect(_on_start)
 	for profile in CampsiteCatalog.all_profiles():
@@ -50,6 +53,11 @@ func reset() -> void:
 	_error.text = ""
 	_on_genre_search_changed("")
 	_update_favorites_label()
+
+func set_active_save_available(value: bool) -> void:
+	_active_save_available = value
+	$Panel/Margin/Content/ResumeButton.visible = value
+	$Panel/Margin/Content/ReplaceConfirm.visible = value
 
 func _on_genre_search_changed(query: String) -> void:
 	_selected_genre = null
@@ -100,6 +108,9 @@ func _on_remove_favorite() -> void:
 	_update_favorites_label()
 
 func _on_start() -> void:
+	if _active_save_available and not $Panel/Margin/Content/ReplaceConfirm.button_pressed:
+		_error.text = "Confirm that this new Festival replaces the active Run autosave."
+		return
 	var configuration := RunConfiguration.new()
 	for favorite in _favorites:
 		configuration.add_favorite(favorite.artist_name, favorite.genre_id)

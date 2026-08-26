@@ -81,6 +81,16 @@ func reset() -> void:
 	_complete = false
 	_last_whole_minute = 0
 
+func restore(saved_minutes: float, saved_scale: float, saved_paused: bool, saved_complete: bool) -> bool:
+	if saved_minutes < 0.0 or saved_minutes > FestivalTime.run_end_minute():
+		return false
+	total_minutes = saved_minutes
+	time_scale = clampf(saved_scale, 1.0, 64.0)
+	_complete = saved_complete
+	paused = true if _complete else saved_paused
+	_last_whole_minute = int(floor(total_minutes))
+	return true
+
 func _emit_boundaries(previous: float, current: float) -> void:
 	var whole := int(floor(total_minutes))
 	while _last_whole_minute < whole:

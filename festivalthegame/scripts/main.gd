@@ -19,9 +19,11 @@ var _map_was_paused := false
 var _vendor_was_paused := false
 var _chat_was_paused := false
 var _vendor_from_night := false
+var _ironman_save := IronmanSave.new()
 
 func _ready() -> void:
 	_setup.configuration_submitted.connect(_on_configuration_submitted)
+	_setup.resume_requested.connect(_resume_active_run)
 	_hud.schedule_requested.connect(_open_schedule)
 	_hud.pause_requested.connect(_toggle_pause)
 	_hud.speed_requested.connect(_cycle_speed)
@@ -41,6 +43,9 @@ func _ready() -> void:
 	Game.morning_recap_requested.connect(_open_recap)
 	_recap_view.dismissed.connect(_on_recap_dismissed)
 	Game.final_scoring_requested.connect(_open_scoreboard)
+	Game.autosave_requested.connect(func(_reason: String) -> void: _write_autosave())
+	Clock.minute_ticked.connect(func(_minute: int) -> void: _write_autosave())
+	Game.run_completed.connect(func() -> void: _ironman_save.clear())
 	_scoreboard.new_run_requested.connect(_open_setup)
 	Game.player_relocation_requested.connect(_player.relocate_to)
 	_open_setup()
@@ -101,6 +106,7 @@ func _open_setup() -> void:
 	_recap_view.hide()
 	_scoreboard.hide()
 	_setup.reset()
+	_setup.set_active_save_available(_ironman_save.has_active_run())
 	_setup.show()
 
 func _on_configuration_submitted(configuration: RunConfiguration) -> void:
@@ -110,6 +116,32 @@ func _on_configuration_submitted(configuration: RunConfiguration) -> void:
 	_spawn_friend_views()
 	_setup.hide()
 	Clock.paused = false
+	_write_autosave()
+
+func _resume_active_run() -> void:
+	var snapshot := _ironman_save.load_snapshot()
+	if snapshot.is_empty():
+		_setup.get_node("Panel/Margin/Content/Error").text = _ironman_save.last_error
+		return
+	var restored := Game.restore_snapshot(snapshot)
+	if restored.is_empty():
+		_setup.get_node("Panel/Margin/Content/Error").text = "The active Run could not be restored safely. Start a new Run to recover."
+		return
+	_spawn_stage_views()
+	_spawn_ground_features()
+	_spawn_friend_views()
+	_player.relocate_to(restored["player_position"])
+	_setup.hide()
+	if Game.night.active:
+		_open_night(Game.night.day)
+	elif Game.pending_recap != null:
+		_open_recap(Game.pending_recap.day)
+	else:
+		Clock.paused = bool(snapshot.get("paused", false))
+
+func _write_autosave() -> void:
+	if Game.run_status == Game.RunStatus.PLAYING and Game.needs != null:
+		_ironman_save.save(Game.snapshot(_player.global_position))
 
 func _open_schedule() -> void:
 	if Game.lineup == null or _setup.visible or _vendor_view.visible or Game.facility_queue.is_active():

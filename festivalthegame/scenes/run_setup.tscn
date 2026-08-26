@@ -108,6 +108,18 @@ layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.35, 0.35, 1)
 autowrap_mode = 2
 
+[node name="ResumeButton" type="Button" parent="Panel/Margin/Content"]
+visible = false
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+text = "Resume active Festival"
+
+[node name="ReplaceConfirm" type="CheckButton" parent="Panel/Margin/Content"]
+visible = false
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+text = "Replace my active Run with a new Festival"
+
 [node name="StartButton" type="Button" parent="Panel/Margin/Content"]
 custom_minimum_size = Vector2(0, 56)
 layout_mode = 2

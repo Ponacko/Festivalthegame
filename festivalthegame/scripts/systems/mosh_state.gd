@@ -60,3 +60,25 @@ func speed_multiplier() -> float:
 
 func is_active() -> bool:
 	return active_set != null and not injured
+
+func snapshot() -> Dictionary:
+	return {"artist": active_set.artist.name if active_set != null else "",
+		"start": active_set.start_minute if active_set != null else -1.0,
+		"injured": injured, "attended": attended_minutes,
+		"risk": risk_per_minute, "accumulator": _risk_minute_accumulator}
+
+func restore(value: Dictionary, lineup: Lineup) -> bool:
+	active_set = null
+	var artist_name := str(value.get("artist", ""))
+	if not artist_name.is_empty():
+		for candidate in lineup.sets:
+			if candidate.artist.name == artist_name and is_equal_approx(candidate.start_minute, float(value.get("start", -1.0))):
+				active_set = candidate
+				break
+		if active_set == null:
+			return false
+	injured = bool(value.get("injured", false))
+	attended_minutes = float(value.get("attended", 0.0))
+	risk_per_minute = float(value.get("risk", DEFAULT_INJURY_RISK_PER_MINUTE))
+	_risk_minute_accumulator = float(value.get("accumulator", 0.0))
+	return true

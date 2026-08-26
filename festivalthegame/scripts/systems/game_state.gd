@@ -448,6 +448,103 @@ func _configuration_summary() -> String:
 		grounds.camp.profile.display_name if grounds != null and grounds.camp != null else "Camp",
 	]
 
+func snapshot(player_position: Vector2) -> Dictionary:
+	var event_values: Array[Dictionary] = []
+	for event in run_events:
+		event_values.append({"type": event.event_type, "time": event.total_minutes, "detail": event.detail})
+	var friend_values: Array[Dictionary] = []
+	for friend in friends:
+		friend_values.append({"id": friend.id,
+			"meet_destination": friend.meet_destination.id if friend.meet_destination != null else "",
+			"meet_until": friend.meet_until})
+	return {
+		"seed": run_seed, "configuration": current_configuration.to_dictionary(),
+		"time": Clock.total_minutes, "time_scale": Clock.time_scale, "paused": Clock.paused,
+		"complete": Clock.is_complete(), "player": {"x": player_position.x, "y": player_position.y},
+		"needs": needs.snapshot(), "budget": budget, "ledger": score_ledger.snapshot(),
+		"events": event_values, "friends": friend_values, "facility": facility_queue.snapshot(),
+		"pending_vendor_point": _pending_vendor.point.id if _pending_vendor != null else "",
+		"pending_vendor_item": _pending_vendor_item.id if _pending_vendor_item != null else "",
+		"food_poisoning": {"state": food_poisoning.state, "pending": food_poisoning.pending_minutes,
+			"active": food_poisoning.active_minutes, "urgent": food_poisoning.urgent_minutes},
+		"tipsy": {"level": tipsy.level, "remaining": tipsy.remaining_minutes,
+			"next_day_penalty": tipsy.next_day_energy_penalty},
+		"mosh": mosh.snapshot(), "poisoning_roll_count": poisoning_roll_count,
+		"poison_rng_state": _poison_rng.state, "mosh_rng_state": _mosh_rng.state,
+		"night": {"active": night.active, "day": night.day, "party": night.party_minutes,
+			"sleep": night.sleep_minutes, "transition": night.transition_applied},
+		"day_start_budget": _day_start_budget, "accident": _accident_penalty,
+		"pending_recap_day": pending_recap.day if pending_recap != null else 0,
+	}
+
+func restore_snapshot(value: Dictionary) -> Dictionary:
+	if not value.has("configuration") or not value.has("seed") or not value.has("needs"):
+		return {}
+	var configuration := RunConfiguration.from_dictionary(value["configuration"])
+	if not configuration.is_valid():
+		return {}
+	start_new_run(configuration, int(value["seed"]))
+	if not needs.restore(value["needs"]) or not score_ledger.restore(value.get("ledger", []), lineup):
+		return {}
+	budget = float(value.get("budget", STARTING_BUDGET))
+	run_events.clear()
+	for saved_event in value.get("events", []):
+		run_events.append(RunEvent.new(str(saved_event.get("type", "")),
+			float(saved_event.get("time", 0.0)), str(saved_event.get("detail", ""))))
+	for saved_friend in value.get("friends", []):
+		for friend in friends:
+			if friend.id == str(saved_friend.get("id", "")):
+				friend.meet_until = float(saved_friend.get("meet_until", -1.0))
+				for point in grounds.points:
+					if point.id == str(saved_friend.get("meet_destination", "")):
+						friend.meet_destination = point
+	if not facility_queue.restore(value.get("facility", {}), grounds):
+		return {}
+	_pending_vendor = null
+	_pending_vendor_item = null
+	var pending_point_id := str(value.get("pending_vendor_point", ""))
+	var pending_item_id := str(value.get("pending_vendor_item", ""))
+	if not pending_point_id.is_empty() or not pending_item_id.is_empty():
+		for vendor in grounds.vendors:
+			if vendor.point.id == pending_point_id:
+				_pending_vendor = vendor
+				for item in vendor.archetype.menu:
+					if item.id == pending_item_id:
+						_pending_vendor_item = item
+		if _pending_vendor == null or _pending_vendor_item == null:
+			return {}
+	var poison: Dictionary = value.get("food_poisoning", {})
+	food_poisoning.state = int(poison.get("state", FoodPoisoning.State.NONE))
+	food_poisoning.pending_minutes = float(poison.get("pending", 0.0))
+	food_poisoning.active_minutes = float(poison.get("active", 0.0))
+	food_poisoning.urgent_minutes = float(poison.get("urgent", 0.0))
+	var saved_tipsy: Dictionary = value.get("tipsy", {})
+	tipsy.level = float(saved_tipsy.get("level", 0.0))
+	tipsy.remaining_minutes = float(saved_tipsy.get("remaining", 0.0))
+	tipsy.next_day_energy_penalty = float(saved_tipsy.get("next_day_penalty", 0.0))
+	if not mosh.restore(value.get("mosh", {}), lineup):
+		return {}
+	poisoning_roll_count = int(value.get("poisoning_roll_count", 0))
+	_poison_rng.state = int(value.get("poison_rng_state", _poison_rng.state))
+	_mosh_rng.state = int(value.get("mosh_rng_state", _mosh_rng.state))
+	var saved_night: Dictionary = value.get("night", {})
+	night.active = bool(saved_night.get("active", false))
+	night.day = int(saved_night.get("day", 0))
+	night.party_minutes = float(saved_night.get("party", 0.0))
+	night.sleep_minutes = float(saved_night.get("sleep", 0.0))
+	night.transition_applied = bool(saved_night.get("transition", false))
+	_day_start_budget = float(value.get("day_start_budget", STARTING_BUDGET))
+	_accident_penalty = bool(value.get("accident", false))
+	var pending_recap_day := int(value.get("pending_recap_day", 0))
+	if pending_recap_day > 0:
+		pending_recap = DayRecap.build(pending_recap_day, score_ledger, run_events,
+			maxf(0.0, _day_start_budget - budget), needs)
+	if not Clock.restore(float(value.get("time", 0.0)), float(value.get("time_scale", 1.0)),
+		bool(value.get("paused", false)), bool(value.get("complete", false))):
+		return {}
+	var player: Dictionary = value.get("player", {})
+	return {"player_position": Vector2(float(player.get("x", 0.0)), float(player.get("y", 0.0)))}
+
 func dismiss_recap() -> void:
 	pending_recap = null
 

@@ -63,3 +63,21 @@ func interrupt() -> String:
 
 func is_active() -> bool:
 	return _active
+
+func snapshot() -> Dictionary:
+	return {"active": _active, "facility_id": facility.id if facility != null else "",
+		"total": total_minutes, "remaining": remaining_minutes}
+
+func restore(value: Dictionary, grounds: FestivalGrounds) -> bool:
+	_active = bool(value.get("active", false))
+	total_minutes = float(value.get("total", 0.0))
+	remaining_minutes = float(value.get("remaining", 0.0))
+	facility = null
+	if _active:
+		for point in grounds.points:
+			if point.id == str(value.get("facility_id", "")):
+				facility = point
+				break
+		if facility == null or remaining_minutes <= 0.0:
+			return false
+	return true

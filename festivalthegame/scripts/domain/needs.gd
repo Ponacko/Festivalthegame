@@ -84,3 +84,19 @@ func enjoyment_multiplier() -> float:
 		sum += fraction(k)
 	var avg := sum / ALL.size()
 	return MULT_MIN + avg * (MULT_MAX - MULT_MIN)
+
+func snapshot() -> Dictionary:
+	var values := {}
+	for kind in ALL:
+		values[str(kind)] = _values[kind]
+	return {"values": values, "social_penalty": social_penalty, "mood_penalty": mood_penalty}
+
+func restore(value: Dictionary) -> bool:
+	var values: Dictionary = value.get("values", {})
+	for kind in ALL:
+		if not values.has(str(kind)):
+			return false
+		_values[kind] = clampf(float(values[str(kind)]), 0.0, MAX)
+	social_penalty = clampf(float(value.get("social_penalty", 0.0)), 0.0, MAX)
+	mood_penalty = clampf(float(value.get("mood_penalty", 0.0)), 0.0, MAX)
+	return true
