@@ -11,6 +11,7 @@ extends Node2D
 @onready var _group_chat: GroupChatView = $ChatLayer/GroupChat
 @onready var _night_view: NightView = $NightLayer/Night
 @onready var _recap_view: RecapView = $RecapLayer/Recap
+@onready var _scoreboard: ScoreboardView = $ScoreboardLayer/Scoreboard
 var _stage_views: Array[StageView] = []
 var _friend_views: Array[FriendView] = []
 var _planner_was_paused := false
@@ -39,6 +40,8 @@ func _ready() -> void:
 	Game.night_choices_requested.connect(_open_night)
 	Game.morning_recap_requested.connect(_open_recap)
 	_recap_view.dismissed.connect(_on_recap_dismissed)
+	Game.final_scoring_requested.connect(_open_scoreboard)
+	_scoreboard.new_run_requested.connect(_open_setup)
 	Game.player_relocation_requested.connect(_player.relocate_to)
 	_open_setup()
 	_spawn_stage_views()
@@ -96,6 +99,7 @@ func _open_setup() -> void:
 	_group_chat.hide()
 	_night_view.hide()
 	_recap_view.hide()
+	_scoreboard.hide()
 	_setup.reset()
 	_setup.show()
 
@@ -199,6 +203,11 @@ func _open_recap(_day: int) -> void:
 func _on_recap_dismissed() -> void:
 	Game.dismiss_recap()
 	Clock.paused = false
+
+func _open_scoreboard() -> void:
+	Clock.paused = true
+	_recap_view.hide()
+	_scoreboard.show_result(Game.final_result, Game.high_scores.entries)
 
 func _toggle_pause() -> void:
 	if not _setup.visible and not _schedule.visible and not _festival_map.visible and not _vendor_view.visible \

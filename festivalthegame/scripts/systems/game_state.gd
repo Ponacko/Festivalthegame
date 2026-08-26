@@ -50,6 +50,8 @@ var mosh_genres := {}
 var friends: Array[FestivalFriend] = []
 var night := NightState.new()
 var pending_recap: DayRecap
+var final_result: FinalResult
+var high_scores := HighScoreStore.new()
 var _day_start_budget := STARTING_BUDGET
 var poisoning_roll_count := 0
 var run_events: Array[RunEvent] = []
@@ -93,6 +95,7 @@ func start_new_run(configuration: RunConfiguration = null, seed_value := -1) -> 
 	friends = FriendGenerator.generate(current_configuration, lineup, grounds, genre_graph, run_seed)
 	night = NightState.new()
 	pending_recap = null
+	final_result = null
 	_day_start_budget = STARTING_BUDGET
 	budget = STARTING_BUDGET
 	score_ledger = ScoreLedger.new()
@@ -419,6 +422,10 @@ func _on_morning_started(day: int) -> void:
 func _on_run_completed() -> void:
 	run_status = RunStatus.COMPLETE
 	pending_recap = null
+	final_result = FinalResult.build(
+		run_seed, _configuration_summary(), score_ledger, theoretical_maximum(), run_events)
+	high_scores.load()
+	high_scores.insert(final_result)
 	final_scoring_requested.emit()
 	autosave_requested.emit("run_completed")
 	run_completed.emit()
@@ -433,6 +440,13 @@ func _new_seed() -> int:
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
 	return rng.randi()
+
+func _configuration_summary() -> String:
+	return "%d friend%s • %s" % [
+		current_configuration.friend_count,
+		"" if current_configuration.friend_count == 1 else "s",
+		grounds.camp.profile.display_name if grounds != null and grounds.camp != null else "Camp",
+	]
 
 func dismiss_recap() -> void:
 	pending_recap = null
