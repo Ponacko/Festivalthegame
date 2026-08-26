@@ -261,6 +261,18 @@ func apply_solo_crowd_atmosphere(minutes: float) -> void:
 	if current_configuration.friend_count == 0 and minutes > 0.0:
 		needs.adjust(Needs.Kind.SOCIAL, 0.10 * minutes * tipsy.gain_multiplier())
 
+func request_friend_meet(
+		friend: FestivalFriend,
+		destination: FestivalPoint,
+		friend_position: Vector2) -> MeetResponse:
+	var response := MeetRequest.evaluate(
+		friend, destination, Clock.total_minutes, friend_position, grounds)
+	run_events.append(RunEvent.new(
+		"meet_request_accepted" if response.accepted else "meet_request_declined",
+		Clock.total_minutes,
+		"%s: %s" % [friend.display_name, response.message]))
+	return response
+
 func available_mosh_set(player_position: Vector2) -> FestivalSet:
 	if lineup == null:
 		return null

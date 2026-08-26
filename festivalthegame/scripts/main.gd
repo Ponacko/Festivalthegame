@@ -8,11 +8,13 @@ extends Node2D
 @onready var _festival_map: FestivalMapView = $MapLayer/FestivalMap
 @onready var _player: Node2D = $Player
 @onready var _vendor_view: VendorView = $VendorLayer/VendorMenu
+@onready var _group_chat: GroupChatView = $ChatLayer/GroupChat
 var _stage_views: Array[StageView] = []
 var _friend_views: Array[FriendView] = []
 var _planner_was_paused := false
 var _map_was_paused := false
 var _vendor_was_paused := false
+var _chat_was_paused := false
 
 func _ready() -> void:
 	_setup.configuration_submitted.connect(_on_configuration_submitted)
@@ -21,10 +23,13 @@ func _ready() -> void:
 	_hud.speed_requested.connect(_cycle_speed)
 	_hud.map_requested.connect(_open_map)
 	_hud.vendor_requested.connect(_open_vendor)
+	_hud.chat_requested.connect(_open_chat)
 	_schedule.closed.connect(_on_schedule_closed)
 	_festival_map.closed.connect(_on_map_closed)
 	_vendor_view.closed.connect(_on_vendor_closed)
 	_vendor_view.purchase_requested.connect(_on_vendor_purchase_requested)
+	_group_chat.closed.connect(_on_chat_closed)
+	_group_chat.meet_requested.connect(_on_meet_requested)
 	Game.player_relocation_requested.connect(_player.relocate_to)
 	_open_setup()
 	_spawn_stage_views()
@@ -79,6 +84,7 @@ func _open_setup() -> void:
 	_schedule.hide()
 	_festival_map.hide()
 	_vendor_view.hide()
+	_group_chat.hide()
 	_setup.reset()
 	_setup.show()
 
@@ -129,12 +135,34 @@ func _on_vendor_purchase_requested(vendor: Vendor, item: VendorItem) -> void:
 	else:
 		_vendor_view.set_status("Not enough Budget or move closer to this Vendor.")
 
+func _open_chat() -> void:
+	if Game.grounds == null or _setup.visible or _schedule.visible or _festival_map.visible \
+			or _vendor_view.visible or Game.facility_queue.is_active():
+		return
+	_chat_was_paused = Clock.paused
+	Clock.paused = true
+	_group_chat.show_chat(Game.friends, Game.grounds)
+
+func _on_chat_closed() -> void:
+	Clock.paused = _chat_was_paused
+
+func _on_meet_requested(friend: FestivalFriend, destination: FestivalPoint) -> void:
+	var position := friend.camp_position
+	for view in _friend_views:
+		if view.friend == friend:
+			position = view.global_position
+			break
+	var response := Game.request_friend_meet(friend, destination, position)
+	_group_chat.show_response(response.message)
+
 func _toggle_pause() -> void:
-	if not _setup.visible and not _schedule.visible and not _festival_map.visible and not _vendor_view.visible:
+	if not _setup.visible and not _schedule.visible and not _festival_map.visible and not _vendor_view.visible \
+			and not _group_chat.visible:
 		Clock.toggle_paused()
 
 func _cycle_speed() -> void:
-	if not _setup.visible and not _schedule.visible and not _festival_map.visible and not _vendor_view.visible:
+	if not _setup.visible and not _schedule.visible and not _festival_map.visible and not _vendor_view.visible \
+			and not _group_chat.visible:
 		Clock.cycle_time_scale()
 
 func _unhandled_input(event: InputEvent) -> void:

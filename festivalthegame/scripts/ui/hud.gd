@@ -6,6 +6,7 @@ signal schedule_requested
 signal pause_requested
 signal speed_requested
 signal map_requested
+signal chat_requested
 signal vendor_requested(vendor: Vendor)
 
 var _info: Label
@@ -70,6 +71,19 @@ func _ready() -> void:
 	map_button.offset_bottom = 256.0
 	map_button.pressed.connect(func() -> void: map_requested.emit())
 	add_child(map_button)
+
+	var chat_button := Button.new()
+	chat_button.name = "ChatButton"
+	chat_button.text = "Group Chat"
+	chat_button.custom_minimum_size = Vector2(160, 52)
+	chat_button.anchor_left = 1.0
+	chat_button.anchor_right = 1.0
+	chat_button.offset_left = -172.0
+	chat_button.offset_top = 268.0
+	chat_button.offset_right = -12.0
+	chat_button.offset_bottom = 320.0
+	chat_button.pressed.connect(func() -> void: chat_requested.emit())
+	add_child(chat_button)
 
 	_facility_button = Button.new()
 	_facility_button.name = "FacilityButton"

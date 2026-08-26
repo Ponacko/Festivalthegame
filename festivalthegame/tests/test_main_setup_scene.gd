@@ -29,6 +29,15 @@ func _ready() -> void:
 	check(main.get_tree().get_nodes_in_group("friends").size() == 2,
 		"playable world spawns exactly the configured autonomous Friends")
 	check(not Clock.paused, "Festival time starts after setup")
+	var chat_button := main.get_node_or_null("Hud/ChatButton") as Button
+	var group_chat := main.get_node_or_null("ChatLayer/GroupChat") as GroupChatView
+	check(chat_button != null and group_chat != null, "phone HUD exposes Group Chat")
+	if chat_button != null and group_chat != null:
+		var chat_time := Clock.total_minutes
+		chat_button.pressed.emit()
+		check(group_chat.visible and Clock.paused and Clock.total_minutes == chat_time,
+			"opening Group Chat pauses without advancing Festival time")
+		group_chat.get_node("Panel/Margin/Content/Close").pressed.emit()
 	var facility_button := main.get_node_or_null("Hud/FacilityButton") as Button
 	var facility_status := main.get_node_or_null("Hud/FacilityStatus") as Label
 	check(facility_button != null and facility_status != null, "touch HUD exposes nearby facility interactions and status")
